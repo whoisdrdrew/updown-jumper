@@ -17,7 +17,7 @@ Current state: **Milestone 1, core movement.** Gray-box graphics, one test level
 
   and open the address it prints (usually http://localhost:5173).
 
-Controls: arrows or A/D to move, Space / Z / Up to jump (hold for a higher jump), Shift / X to run, R to restart.
+Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot (hold it to run, like the Y button in Super Mario World), R to restart.
 
 ## Project layout
 
@@ -26,6 +26,7 @@ Controls: arrows or A/D to move, Space / Z / Up to jump (hold for a higher jump)
 | `src/config.js` | Every movement number (speeds, jump height, gravity). Tune the game feel here. |
 | `src/player/Player.js` | Player movement: acceleration, skidding, variable jump, coyote time, jump buffer. |
 | `src/player/Controls.js` | Keyboard mapping. |
+| `src/player/Fireballs.js` | The shoot button's bouncing fireballs. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 

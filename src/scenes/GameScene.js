@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { TILE } from '../config.js';
 import Player from '../player/Player.js';
 import Controls from '../player/Controls.js';
+import Fireballs from '../player/Fireballs.js';
 import testLevel from '../levels/testLevel.js';
 
 // Tile indexes in the placeholder tileset.
@@ -28,6 +29,7 @@ export default class GameScene extends Phaser.Scene {
     this.controls = new Controls(this);
     this.player = new Player(this, start.x, start.y, this.controls);
     this.physics.add.collider(this.player, layer);
+    this.player.fireballs = new Fireballs(this, layer);
 
     this.addGoal(goal);
 
@@ -45,6 +47,7 @@ export default class GameScene extends Phaser.Scene {
   update(time, delta) {
     if (this.finished) return;
     this.player.update(time, delta);
+    this.player.fireballs.update();
     if (this.player.y > this.worldH + 32) this.respawn();
   }
 
@@ -165,6 +168,12 @@ export default class GameScene extends Phaser.Scene {
     g.fillStyle(0xffffff).fillRect(7, 3, 3, 4);
     g.fillStyle(0x000000).fillRect(9, 4, 1, 2);
     g.generateTexture('player', 12, 16);
+    g.clear();
+
+    // Fireball: orange ball with a yellow core (the core shows the spin).
+    g.fillStyle(0xff6a00).fillCircle(3, 3, 3);
+    g.fillStyle(0xffe040).fillRect(1, 2, 2, 2);
+    g.generateTexture('fireball', 6, 6);
     g.destroy();
   }
 }

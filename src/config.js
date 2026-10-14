@@ -27,4 +27,16 @@ export const PLAYER = {
 
   coyoteMs: 80, // can still jump this long after walking off a ledge
   jumpBufferMs: 110, // a jump pressed this long before landing still counts
+
+  // Power state: 'small', 'big' or 'fire'. Only 'fire' can shoot. Power-up items will change
+  // this in a later milestone; it starts at 'fire' for now so the shoot button can be tried.
+  startPower: 'fire',
+};
+
+export const FIREBALL = {
+  speed: 210,
+  launchSpeed: 60, // starts slightly downward so it quickly finds the ground
+  bounceSpeed: 170,
+  maxFallSpeed: 300,
+  maxOnScreen: 2, // like Mario, only two at a time
 };

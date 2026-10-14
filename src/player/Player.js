@@ -16,6 +16,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.lastGroundedAt = -Infinity;
     this.jumpPressedAt = -Infinity;
+    this.power = PLAYER.startPower;
+    this.fireballs = null; // set by the scene
   }
 
   update(time, delta) {
@@ -57,6 +59,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const rising = body.velocity.y < 0;
     const extra = rising && c.jump() ? 0 : PLAYER.releaseGravity - PHYSICS.gravity;
     body.setGravityY(extra);
+
+    if (c.shootJustPressed() && this.power === 'fire' && this.fireballs) {
+      const dir = this.flipX ? -1 : 1;
+      this.fireballs.shoot(this.x + dir * 8, this.y - 2, dir);
+    }
 
   }
 }
