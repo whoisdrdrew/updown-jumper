@@ -4,13 +4,14 @@
 export const GAME_WIDTH = 320;
 export const GAME_HEIGHT = 180;
 export const TILE = 16;
+export const LEVEL_TIME = 300; // seconds on the clock per level
 
 export const PHYSICS = {
   gravity: 900, // normal pull while rising with jump held
 };
 
 export const PLAYER = {
-  width: 12,
+  width: 10, // hitbox; the sprite is a little wider
   height: 16,
 
   walkSpeed: 90,

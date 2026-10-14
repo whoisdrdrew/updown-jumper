@@ -3,7 +3,7 @@
 An 8-bit, Super Mario World style browser platformer starring Boris Brejcha's Up-Down-Jumper.
 Built with [Phaser 3](https://phaser.io) and [Vite](https://vitejs.dev).
 
-Current state: **Milestone 1, core movement.** Gray-box graphics, one test level.
+Current state: **Milestone 1, core movement**, with a first style pass after the Ibiza club reference. All art is placeholder pixel art drawn in code (`src/art/`), one test level.
 
 ## Play
 
@@ -38,6 +38,7 @@ Test level items:
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
+| `src/art/` | Placeholder pixel art drawn in code: sprites, tiles, club backdrop. |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 
 ## Publishing

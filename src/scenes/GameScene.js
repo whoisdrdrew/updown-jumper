@@ -6,7 +6,12 @@ import RubberDucks from '../player/RubberDucks.js';
 import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
-import { PLAYER } from '../config.js';
+import { PLAYER, GAME_WIDTH, LEVEL_TIME } from '../config.js';
+import { createSprites } from '../art/sprites.js';
+import { createTiles } from '../art/tiles.js';
+import { createBackground } from '../art/background.js';
+
+const FONT = '"Press Start 2P", monospace';
 import testLevel from '../levels/testLevel.js';
 
 
@@ -16,12 +21,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.makePlaceholderTextures();
+    createTiles(this);
+    createSprites(this);
     const { map, layer, start, goal, mangos, eggs, pickups, blockContents } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
-    this.addBackground(worldW, worldH);
+    this.updateBackground = createBackground(this, worldW, worldH);
     this.add.existing(layer);
     this.layer = layer;
 
@@ -49,6 +55,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    this.updateBackground(time);
     if (this.finished) return;
     this.player.update(time, delta);
     this.shots.update();
@@ -118,25 +125,46 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // Top-left: hearts (one lost per hit, the last hit loses the life) and rubber ducks left to shoot.
+  // Top bar in the style of the reference: hearts and rubber ducks left, world name centre, time right.
   addHud() {
+    const text = (x, y, value, originX = 0) =>
+      this.add
+        .text(x, y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff', align: 'center' })
+        .setShadow(1, 1, '#1a1020', 0, false, true)
+        .setOrigin(originX, 0)
+        .setScrollFactor(0)
+        .setDepth(10);
+
     this.hearts = [];
     for (let i = 0; i < PLAYER.maxHits; i++) {
-      this.hearts.push(this.add.image(8 + i * 10, 8, 'heart').setScrollFactor(0).setDepth(10));
+      this.hearts.push(this.add.image(10 + i * 10, 9, 'heart').setScrollFactor(0).setDepth(10));
     }
-    this.add.image(8, 20, 'rubber-duck').setScrollFactor(0).setDepth(10);
-    this.ammoText = this.add
-      .text(15, 14, '', { fontFamily: 'monospace', fontSize: '9px', fontStyle: 'bold', color: '#ffffff', stroke: '#000000', strokeThickness: 3 })
-      .setScrollFactor(0)
-      .setDepth(10)
-      .setResolution(4);
+    this.add.image(10, 22, 'rubber-duck').setScrollFactor(0).setDepth(10);
+    this.ammoText = text(17, 18, '');
+    text(GAME_WIDTH / 2, 5, 'IBIZA\nWORLD 1-1', 0.5).setLineSpacing(2);
+    text(GAME_WIDTH - 6, 5, 'TIME', 1);
+    this.timeText = text(GAME_WIDTH - 6, 15, '', 1);
+
+    // Mario-style clock: when it runs out, the life is lost.
+    this.timeLeft = LEVEL_TIME;
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => {
+        if (this.finished || this.player.dead) return;
+        this.timeLeft = Math.max(0, this.timeLeft - 1);
+        this.updateHud();
+        if (this.timeLeft === 0) this.player.die();
+      },
+    });
     this.updateHud();
   }
 
   updateHud() {
     const left = PLAYER.maxHits - this.player.hits;
     this.hearts.forEach((heart, i) => heart.setTexture(i < left ? 'heart' : 'heart-empty'));
-    this.ammoText.setText(`x${this.player.ammo}`);
+    this.ammoText.setText(`x${String(this.player.ammo).padStart(2, '0')}`);
+    this.timeText.setText(String(this.timeLeft));
   }
 
   // Turns the text level into a Phaser tilemap with collisions.
@@ -190,8 +218,9 @@ export default class GameScene extends Phaser.Scene {
     // The pole runs from the F tile down to the ground below it.
     const groundY = this.findGroundBelow(goal.x, goal.y);
     const poleH = groundY - goal.y;
-    this.add.rectangle(goal.x, goal.y + poleH / 2, 2, poleH, 0xeeeeee);
-    this.add.triangle(goal.x + 1, goal.y + 6, 0, 0, 0, 10, 12, 5, 0x30d060).setOrigin(0, 0.5);
+    this.add.rectangle(goal.x, goal.y + poleH / 2, 2, poleH, 0xdcdcf0);
+    this.add.circle(goal.x, goal.y, 2, 0xf2c230);
+    this.add.triangle(goal.x + 1, goal.y + 7, 0, 0, 0, 10, 12, 5, 0xff5aa0).setOrigin(0, 0.5);
 
     const zone = this.add.zone(goal.x, goal.y + poleH / 2, 10, poleH);
     this.physics.add.existing(zone, true);
@@ -224,123 +253,10 @@ export default class GameScene extends Phaser.Scene {
 
   banner(text) {
     this.add
-      .text(this.cameras.main.width / 2, 50, text, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 4,
-      })
+      .text(this.cameras.main.width / 2, 60, text, { fontFamily: FONT, fontSize: '16px', color: '#ffe680' })
+      .setShadow(2, 2, '#1a1020', 0, false, true)
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setResolution(4);
-  }
-
-  // Distant hills and clouds that scroll slower than the level, so camera movement is easy to see.
-  addBackground(worldW, worldH) {
-    for (let x = 0; x < worldW; x += 140) {
-      const h = 40 + ((x * 7) % 50);
-      this.add.ellipse(x + 40, worldH - 40, 120, h * 2, 0x4a7fd8).setScrollFactor(0.4, 1);
-    }
-    for (let x = 30; x < worldW; x += 190) {
-      this.add.rectangle(x, 24 + ((x * 3) % 40), 36, 10, 0xdce8ff).setScrollFactor(0.2, 1);
-    }
-  }
-
-  // Simple colored tiles and player box, drawn in code. Replaced by real pixel art later.
-  makePlaceholderTextures() {
-    if (this.textures.exists('tiles')) return;
-    const g = this.make.graphics({ add: false });
-
-    // 0 grass-topped ground
-    g.fillStyle(0x8a5a2b).fillRect(0, 0, 16, 16);
-    g.fillStyle(0x3cb043).fillRect(0, 0, 16, 4);
-    // 1 solid block
-    g.fillStyle(0xb0b0b0).fillRect(16, 0, 16, 16);
-    g.fillStyle(0x707070).fillRect(16, 15, 16, 1).fillRect(31, 0, 1, 16);
-    g.fillStyle(0xe0e0e0).fillRect(16, 0, 16, 1).fillRect(16, 0, 1, 16);
-    // 2 thin platform
-    g.fillStyle(0xf0c040).fillRect(32, 0, 16, 5);
-    g.fillStyle(0xa07020).fillRect(32, 4, 16, 1);
-    // 3 dirt
-    g.fillStyle(0x8a5a2b).fillRect(48, 0, 16, 16);
-    g.fillStyle(0x6e4520).fillRect(52, 5, 2, 2).fillRect(58, 11, 2, 2);
-    // 4 music-note block (our "?" block)
-    g.fillStyle(0x000000).fillRect(64, 0, 16, 16);
-    g.fillStyle(0xf0b000).fillRect(65, 1, 14, 14);
-    g.fillStyle(0xffe070).fillRect(65, 1, 14, 1).fillRect(65, 1, 1, 14);
-    g.fillStyle(0x000000).fillRect(72, 3, 1, 8).fillRect(73, 3, 3, 1).fillRect(75, 4, 1, 2).fillRect(69, 10, 4, 3); // eighth note
-    // 5 used (empty) block
-    g.fillStyle(0x000000).fillRect(80, 0, 16, 16);
-    g.fillStyle(0x8a6a4a).fillRect(81, 1, 14, 14);
-    g.fillStyle(0x5a4030).fillRect(83, 3, 1, 1).fillRect(92, 3, 1, 1).fillRect(83, 12, 1, 1).fillRect(92, 12, 1, 1);
-    // 6 breakable brick
-    g.fillStyle(0xb8642a).fillRect(96, 0, 16, 16);
-    g.fillStyle(0x5a2a10).fillRect(96, 7, 16, 1).fillRect(96, 15, 16, 1).fillRect(103, 0, 1, 7).fillRect(99, 8, 1, 7).fillRect(107, 8, 1, 7);
-    g.fillStyle(0xe08a50).fillRect(96, 0, 16, 1);
-    g.generateTexture('tiles', 112, 16);
-    g.clear();
-
-    // Player: red box with an eye on the facing side.
-    g.fillStyle(0xe03030).fillRect(0, 0, 12, 16);
-    g.fillStyle(0xffffff).fillRect(7, 3, 3, 4);
-    g.fillStyle(0x000000).fillRect(9, 4, 1, 2);
-    g.generateTexture('player', 12, 16);
-    g.clear();
-
-    // Small rubber duck (the shot), facing right.
-    g.fillStyle(0xffd400).fillRect(0, 3, 7, 4).fillRect(3, 0, 4, 4);
-    g.fillStyle(0xff7a00).fillRect(7, 2, 2, 1);
-    g.fillStyle(0x000000).fillRect(5, 1, 1, 1);
-    g.generateTexture('rubber-duck', 9, 7);
-    g.clear();
-
-    // Mango with a leaf.
-    g.fillStyle(0xff9a1a).fillEllipse(5, 5, 10, 7);
-    g.fillStyle(0xffd040).fillRect(2, 3, 3, 2);
-    g.fillStyle(0x2f9e3a).fillRect(5, 0, 3, 2);
-    g.generateTexture('mango', 10, 9);
-    g.clear();
-
-    // Spotted egg and one shell half.
-    g.fillStyle(0xf4f4f4).fillEllipse(6, 7, 12, 14);
-    g.fillStyle(0xffd400).fillRect(3, 4, 2, 2).fillRect(7, 8, 3, 2).fillRect(4, 10, 2, 2);
-    g.generateTexture('egg', 12, 14);
-    g.clear();
-    g.fillStyle(0xf4f4f4).fillRect(0, 0, 6, 8);
-    g.fillStyle(0xffd400).fillRect(2, 3, 2, 2);
-    g.generateTexture('egg-half', 6, 8);
-    g.clear();
-
-    // Big ride-on duck, facing right.
-    const bigDuck = (oy) => {
-      g.fillStyle(0xffd400).fillRect(0, oy + 5, 15, 8).fillRect(9, oy, 7, 7);
-      g.fillStyle(0xe8b800).fillRect(2, oy + 7, 7, 3); // wing
-      g.fillStyle(0xff7a00).fillRect(16, oy + 3, 2, 2).fillRect(4, oy + 13, 3, 1).fillRect(10, oy + 13, 3, 1);
-      g.fillStyle(0x000000).fillRect(13, oy + 2, 1, 2);
-    };
-    bigDuck(0);
-    g.generateTexture('big-duck', 18, 14);
-    g.clear();
-
-    // Player riding the duck: the box sits on the duck's back, behind its head.
-    bigDuck(8);
-    g.fillStyle(0xe03030).fillRect(0, 0, 9, 14);
-    g.fillStyle(0xffffff).fillRect(5, 3, 3, 4);
-    g.fillStyle(0x000000).fillRect(7, 4, 1, 2);
-    g.generateTexture('rider', 18, 22);
-    g.clear();
-
-    // Hearts for the HUD.
-    const heart = (color) => {
-      g.fillStyle(0x000000).fillRect(0, 1, 9, 4).fillRect(1, 0, 3, 7).fillRect(5, 0, 3, 7).fillRect(2, 5, 5, 2).fillRect(3, 7, 3, 1);
-      g.fillStyle(color).fillRect(1, 1, 3, 4).fillRect(5, 1, 3, 4).fillRect(2, 4, 5, 2).fillRect(3, 6, 3, 1).fillRect(4, 1, 1, 3);
-    };
-    heart(0xff3050);
-    g.generateTexture('heart', 9, 8);
-    g.clear();
-    heart(0x444444);
-    g.generateTexture('heart-empty', 9, 8);
-    g.destroy();
+      .setDepth(10);
   }
 }

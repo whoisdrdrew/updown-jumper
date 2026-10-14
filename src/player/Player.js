@@ -2,18 +2,18 @@ import Phaser from 'phaser';
 import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
 
 // Hitbox sizes on foot and riding the big duck.
-const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 14, h: 20 } };
+const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 14, h: 22 } };
 
 // The Up-Down-Jumper. For now a colored box; the real sprite comes in the art milestone.
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, input) {
-    super(scene, x, y, 'player');
+    super(scene, x, y, 'hero-idle');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     this.controls = input;
-    this.body.setSize(SIZE.foot.w, SIZE.foot.h);
+    this.fitBody(SIZE.foot);
     this.body.setMaxVelocityY(PLAYER.maxFallSpeed);
     this.setCollideWorldBounds(true);
 
@@ -82,6 +82,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const extra = rising && c.jump() ? 0 : PLAYER.releaseGravity - PHYSICS.gravity;
     body.setGravityY(extra);
 
+    this.animate(time, onGround);
+
     // Each shot uses up one collected rubber duck.
     if (c.shootJustPressed() && this.power === 'ducks' && this.ammo > 0 && this.shots) {
       if (this.shots.shoot(this.x + this.facing * 8, this.y - 2, this.facing)) this.addAmmo(-1);
@@ -149,9 +151,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.riding = false;
     const { x } = this;
     const bottom = this.body.bottom;
-    this.resize('player', SIZE.foot);
+    this.resize('hero-idle', SIZE.foot);
     this.body.setVelocityY(-200); // jump off the duck
     this.emit('dismount', x, bottom - 8, -this.facing);
+  }
+
+  // Hitbox centred horizontally, standing on the bottom edge of the sprite.
+  fitBody(size) {
+    this.body.setSize(size.w, size.h, false);
+    this.body.setOffset((this.width - size.w) / 2, this.height - size.h);
+  }
+
+  // Run, jump and stand poses (riding uses one picture for now).
+  animate(time, onGround) {
+    if (this.riding) return;
+    let pose = 'idle';
+    if (!onGround) pose = 'jump';
+    else if (Math.abs(this.body.velocity.x) > 10) pose = Math.floor(time / (Math.abs(this.body.velocity.x) > 120 ? 70 : 110)) % 2 ? 'run1' : 'run2';
+    this.setTexture(`hero-${pose}`);
   }
 
   // Swap texture and hitbox while keeping the feet where they were.
@@ -159,7 +176,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const bottom = this.body.bottom;
     const velocity = this.body.velocity.clone();
     this.setTexture(texture);
-    this.body.setSize(size.w, size.h);
+    this.fitBody(size);
     this.body.reset(this.x, bottom - this.height / 2);
     this.body.setVelocity(velocity.x, velocity.y);
   }
