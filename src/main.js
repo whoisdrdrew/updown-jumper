@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, PHYSICS } from './config.js';
+import { GAME_WIDTH, GAME_HEIGHT, ZOOM, PHYSICS } from './config.js';
 import GameScene from './scenes/GameScene.js';
 
 function startGame() {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    width: GAME_WIDTH,
-    height: GAME_HEIGHT,
+    width: GAME_WIDTH * ZOOM,
+    height: GAME_HEIGHT * ZOOM,
     backgroundColor: '#24123e',
     pixelArt: true,
     scale: {

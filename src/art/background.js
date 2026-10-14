@@ -113,28 +113,32 @@ export function createBackground(scene, worldW, worldH) {
   canvasTexture(scene, 'bg-crowd', 320, GAME_HEIGHT, drawCrowd);
   canvasTexture(scene, 'bg-water', 48, 40, drawWater);
 
-  scene.add.image(0, 0, 'bg-sky').setOrigin(0).setScrollFactor(0);
-  const venue = scene.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'bg-venue').setOrigin(0).setScrollFactor(0);
+  // Fixed layers sit at the camera's zoom offset, so they fill the zoomed view.
+  const cam = scene.cameras.main;
+  const ox = (cam.width - cam.width / cam.zoom) / 2;
+  const oy = (cam.height - cam.height / cam.zoom) / 2;
+
+  scene.add.image(ox, oy, 'bg-sky').setOrigin(0).setScrollFactor(0);
+  const venue = scene.add.tileSprite(ox, oy, GAME_WIDTH, GAME_HEIGHT, 'bg-venue').setOrigin(0).setScrollFactor(0);
 
   // Light beams sweeping from the roof, drawn additively so they glow.
   const beams = [];
   const beamColors = [0x7ad0ff, 0xff5a8a, 0x7ad0ff, 0xffd060, 0xff5a8a];
   beamColors.forEach((color, i) => {
     const beam = scene.add
-      .triangle(0, 0, 0, 0, -14, 150, 14, 150, color, 0.18)
+      .triangle(0, oy, 0, 0, -14, 150, 14, 150, color, 0.18)
       .setOrigin(0, 0)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScrollFactor(0);
-    beam.baseX = 30 + i * 65;
+    beam.baseX = ox + 30 + i * 65;
     beams.push(beam);
     scene.tweens.add({ targets: beam, angle: { from: -25, to: 25 }, duration: 1800 + i * 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 200 });
   });
 
-  const crowd = scene.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'bg-crowd').setOrigin(0).setScrollFactor(0);
+  const crowd = scene.add.tileSprite(ox, oy, GAME_WIDTH, GAME_HEIGHT, 'bg-crowd').setOrigin(0).setScrollFactor(0);
   // Water fills the pits; the ground tiles cover it everywhere else.
   const water = scene.add.tileSprite(0, worldH - 36, worldW, 40, 'bg-water').setOrigin(0);
 
-  const cam = scene.cameras.main;
   return function update(time) {
     venue.tilePositionX = cam.scrollX * 0.15;
     crowd.tilePositionX = cam.scrollX * 0.4;

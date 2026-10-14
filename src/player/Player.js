@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
+import { HERO_SCALE } from '../art/sprites.js';
 
 // Hitbox sizes on foot and riding the big duck.
 const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 16, h: 22 } };
@@ -11,6 +12,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     super(scene, x, y, 'hero-idle');
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setScale(HERO_SCALE);
 
     this.controls = input;
     this.fitBody(SIZE.foot);
@@ -157,9 +159,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   // Hitbox centred horizontally, standing on the bottom edge of the sprite.
+  // Sizes are in world pixels; the body works in picture pixels, so divide by the sprite's scale.
   fitBody(size) {
-    this.body.setSize(size.w, size.h, false);
-    this.body.setOffset((this.width - size.w) / 2, this.height - size.h);
+    const w = size.w / this.scaleX;
+    const h = size.h / this.scaleY;
+    this.body.setSize(w, h, false);
+    this.body.setOffset((this.width - w) / 2, this.height - h);
   }
 
   // Run, jump and stand poses (riding uses one picture for now).
@@ -167,7 +172,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.riding) return;
     let pose = 'idle';
     if (!onGround) pose = 'jump';
-    else if (Math.abs(this.body.velocity.x) > 10) pose = Math.floor(time / (Math.abs(this.body.velocity.x) > 120 ? 70 : 110)) % 2 ? 'run1' : 'run2';
+    else if (Math.abs(this.body.velocity.x) > 10) {
+      // The sheet has one running pose; alternating it with standing gives a two-step run cycle.
+      const stepMs = Math.abs(this.body.velocity.x) > 120 ? 90 : 140;
+      pose = Math.floor(time / stepMs) % 2 ? 'run' : 'idle';
+    }
     this.setTexture(`hero-${pose}`);
   }
 
@@ -177,7 +186,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const velocity = this.body.velocity.clone();
     this.setTexture(texture);
     this.fitBody(size);
-    this.body.reset(this.x, bottom - this.height / 2);
+    this.body.reset(this.x, bottom - this.displayHeight / 2);
     this.body.setVelocity(velocity.x, velocity.y);
   }
 }

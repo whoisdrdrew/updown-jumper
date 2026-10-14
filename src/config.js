@@ -1,8 +1,11 @@
 // All the numbers that decide how the game feels live here, so they can be tuned in one place.
 // Units: pixels and pixels per second (the game is 320x180, scaled up to fit the window).
 
+// The world is laid out for a 320x180 view. The canvas is drawn ZOOM times larger so sprites that
+// are drawn at half size (the hero) keep their full detail.
 export const GAME_WIDTH = 320;
 export const GAME_HEIGHT = 180;
+export const ZOOM = 2;
 export const TILE = 16;
 export const LEVEL_TIME = 300; // seconds on the clock per level
 

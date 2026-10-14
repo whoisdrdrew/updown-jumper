@@ -1,4 +1,17 @@
-import { pixelTexture, compose } from './pixels.js';
+import { pixelTexture } from './pixels.js';
+import heroIdle from './hero/idle.png';
+import heroRun from './hero/run.png';
+import heroJump from './hero/jump.png';
+
+// The hero's poses, cut from Sandro's pose sheet (art/hero-poses.png in the project files).
+// They are drawn at half size, so each picture pixel is one screen pixel at ZOOM 2.
+export const HERO_SCALE = 0.5;
+
+export function preloadSprites(scene) {
+  scene.load.image('hero-idle', heroIdle);
+  scene.load.image('hero-run', heroRun);
+  scene.load.image('hero-jump', heroJump);
+}
 
 // Placeholder pixel art in the style of the Ibiza club reference (art/style-reference.png in the
 // project files). Swap these for real sprite sheets in the art milestone.
@@ -23,40 +36,6 @@ const PALETTE = {
   O: '#ff5a1a', // mango red-orange
   l: '#3cae4a', // leaf green
   p: '#ff5aa0', // pink
-  c: '#5ab8ff', // hair highlight
-  u: '#1a3a90', // mask eye holes
-};
-
-// The Up-Down-Jumper, after the character sheet (art/hero-character-sheet.png in the project files):
-// chibi proportions, tall blue spiky hair, white mask with gold ornament and blue eye holes,
-// black tee, blue jeans, white sneakers. 16x24; the hair sticks out above the hitbox.
-const HERO_TOP = [
-  '......k...k.....',
-  '...k.kbk.kck.k..',
-  '..kbkkbckbcbkck.',
-  '..kbcbbccbbcbbk.',
-  '.kbbcBbcBbbcbbk.',
-  'kbbbbbbbbbbbbbbk',
-  'kbbwwwwgwwwwbbk.',
-  '.kbwgwwgwwgwbk..',
-  '.kwwggwgwggwwk..',
-  '.kwuuuwgwuuuwk..',
-  '.kwwuuwwwuuwwk..',
-  '..kwwwwwwwwwk...',
-  '..kwgwkkkwgwk...',
-  '...kWwwwwwWk....',
-  '....kkkkkkk.....',
-  '...kdddddddk....',
-  '..ksddddDddsk...',
-  '..ksdddddddsk...',
-  '..kskdddddksk...',
-  '...kknnnnnkk....',
-];
-const HERO_LEGS = {
-  idle: ['....knnknnk.....', '....knnknnk.....', '...kwwwkwwwk....', '...kkkkkkkkk....'],
-  run1: ['...knnk.knnk....', '..knnk...knnk...', '.kwwwk...kwwwk..', '.kkkk.....kkkk..'],
-  run2: ['....knnnnk......', '.....knnk.......', '....kwwwwk......', '....kkkkk.......'],
-  jump: ['...knnk..knnk...', '..kwwwk...knnk..', '..kkkk...kwwwk..', '..........kkkk..'],
 };
 
 const BIG_DUCK = [
@@ -120,13 +99,25 @@ const EGG_HALF = ['..kkk.', '.kwwwk', 'kwggwk', 'kwggwk', 'kwwwwk', 'kwwwWk', '.
 const HEART = ['.kk.kk..', 'krrkrrk.', 'krrrrrrk', 'krrrrrrk', '.krrrrk.', '..krrk..', '...kk...'];
 const HEART_EMPTY = HEART.map((r) => r.replace(/r/g, 'D'));
 
+// Riding: the hero's upper body (from the standing pose) on the duck's back, behind its head.
+// Built at the hero's resolution, so the duck is doubled.
+function makeRider(scene) {
+  if (scene.textures.exists('rider')) return;
+  const hero = scene.textures.get('hero-idle').getSourceImage();
+  const duck = scene.textures.get('big-duck').getSourceImage();
+  const tex = scene.textures.createCanvas('rider', 56, 54);
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(duck, 0, 0, 18, 14, 20, 26, 36, 28);
+  ctx.drawImage(hero, 0, 0, 44, 39, 0, 0, 44, 39);
+  tex.refresh();
+}
+
 export function createSprites(scene) {
   const make = (key, rows) => pixelTexture(scene, key, rows, PALETTE);
 
-  for (const [pose, legs] of Object.entries(HERO_LEGS)) make(`hero-${pose}`, [...HERO_TOP, ...legs]);
   make('big-duck', BIG_DUCK);
-  // Riding: the hero's upper body sits on the duck's back, behind its head.
-  make('rider', compose(25, 26, [{ rows: BIG_DUCK, x: 7, y: 12 }, { rows: HERO_TOP.slice(0, 19), x: 0, y: 0 }]));
+  makeRider(scene);
   make('rubber-duck', RUBBER_DUCK);
   make('mango', MANGO);
   make('egg', EGG);

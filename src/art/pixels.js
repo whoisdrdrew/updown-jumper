@@ -15,18 +15,3 @@ export function pixelTexture(scene, key, rows, palette) {
   });
   canvas.refresh();
 }
-
-// Stacks several drawings into one (later ones on top), each at its own offset.
-export function compose(width, height, layers) {
-  const grid = Array.from({ length: height }, () => Array(width).fill('.'));
-  for (const { rows, x: ox = 0, y: oy = 0 } of layers) {
-    rows.forEach((row, y) =>
-      [...row].forEach((ch, x) => {
-        const gx = ox + x;
-        const gy = oy + y;
-        if (ch !== '.' && gx >= 0 && gx < width && gy >= 0 && gy < height) grid[gy][gx] = ch;
-      }),
-    );
-  }
-  return grid.map((r) => r.join(''));
-}

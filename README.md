@@ -38,7 +38,7 @@ Test level items:
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
-| `src/art/` | Placeholder pixel art drawn in code: sprites, tiles, club backdrop. |
+| `src/art/` | Art: the hero's poses (`src/art/hero/*.png`, cut from the pose sheet) and placeholder pixel art drawn in code for everything else. |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 
 ## Publishing

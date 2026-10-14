@@ -6,8 +6,8 @@ import RubberDucks from '../player/RubberDucks.js';
 import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
-import { PLAYER, GAME_WIDTH, LEVEL_TIME } from '../config.js';
-import { createSprites } from '../art/sprites.js';
+import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM } from '../config.js';
+import { createSprites, preloadSprites } from '../art/sprites.js';
 import { createTiles } from '../art/tiles.js';
 import { createBackground } from '../art/background.js';
 
@@ -20,7 +20,15 @@ export default class GameScene extends Phaser.Scene {
     super('game');
   }
 
+  preload() {
+    preloadSprites(this);
+  }
+
   create() {
+    // Zoom first: the fixed background and top bar are placed relative to the zoomed view.
+    const cam = this.cameras.main;
+    cam.setZoom(ZOOM);
+    this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createTiles(this);
     createSprites(this);
     const { map, layer, start, goal, mangos, eggs, pickups, blockContents } = this.buildLevel(testLevel);
@@ -42,7 +50,6 @@ export default class GameScene extends Phaser.Scene {
 
     this.addGoal(goal);
 
-    const cam = this.cameras.main;
     cam.setBounds(0, 0, worldW, worldH);
     cam.startFollow(this.player, true, 0.2, 0.2);
     cam.setDeadzone(24, 48);
@@ -127,9 +134,10 @@ export default class GameScene extends Phaser.Scene {
 
   // Top bar in the style of the reference: hearts and rubber ducks left, world name centre, time right.
   addHud() {
+    const { x: ux, y: uy } = this.ui;
     const text = (x, y, value, originX = 0) =>
       this.add
-        .text(x, y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff', align: 'center' })
+        .text(ux + x, uy + y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff', align: 'center' })
         .setShadow(1, 1, '#1a1020', 0, false, true)
         .setOrigin(originX, 0)
         .setScrollFactor(0)
@@ -137,9 +145,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.hearts = [];
     for (let i = 0; i < PLAYER.maxHits; i++) {
-      this.hearts.push(this.add.image(10 + i * 10, 9, 'heart').setScrollFactor(0).setDepth(10));
+      this.hearts.push(this.add.image(ux + 10 + i * 10, uy + 9, 'heart').setScrollFactor(0).setDepth(10));
     }
-    this.add.image(10, 22, 'rubber-duck').setScrollFactor(0).setDepth(10);
+    this.add.image(ux + 10, uy + 22, 'rubber-duck').setScrollFactor(0).setDepth(10);
     this.ammoText = text(17, 18, '');
     text(GAME_WIDTH / 2, 5, 'IBIZA\nWORLD 1-1', 0.5).setLineSpacing(2);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
@@ -253,7 +261,7 @@ export default class GameScene extends Phaser.Scene {
 
   banner(text) {
     this.add
-      .text(this.cameras.main.width / 2, 60, text, { fontFamily: FONT, fontSize: '16px', color: '#ffe680' })
+      .text(this.ui.x + GAME_WIDTH / 2, this.ui.y + 60, text, { fontFamily: FONT, fontSize: '16px', color: '#ffe680' })
       .setShadow(2, 2, '#1a1020', 0, false, true)
       .setOrigin(0.5)
       .setScrollFactor(0)
