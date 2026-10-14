@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Up-Down-Jumper</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #111; color: #ccc; font-family: monospace; }
+      body { display: flex; flex-direction: column; }
+      #game { flex: 1; min-height: 0; }
+      #help { padding: 6px 12px; font-size: 13px; text-align: center; }
+      kbd { background: #333; border-radius: 3px; padding: 1px 5px; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="help">
+      Move <kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> &middot;
+      Jump <kbd>Space</kbd> / <kbd>Z</kbd> / <kbd>&uarr;</kbd> (hold for higher) &middot;
+      Run <kbd>Shift</kbd> / <kbd>X</kbd> &middot;
+      Restart <kbd>R</kbd>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
