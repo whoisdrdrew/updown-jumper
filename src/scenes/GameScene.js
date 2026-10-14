@@ -149,7 +149,8 @@ export default class GameScene extends Phaser.Scene {
     }
     this.add.image(ux + 10, uy + 22, 'rubber-duck').setScrollFactor(0).setDepth(10);
     this.ammoText = text(17, 18, '');
-    text(GAME_WIDTH / 2, 5, 'IBIZA\nWORLD 1-1', 0.5).setLineSpacing(2);
+    text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
+    text(GAME_WIDTH / 2, 15, 'IBIZA WORLD 1-1', 0.5);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeText = text(GAME_WIDTH - 6, 15, '', 1);
 
