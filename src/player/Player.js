@@ -1,7 +1,11 @@
 import Phaser from 'phaser';
-import { PHYSICS, PLAYER } from '../config.js';
+import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
+
+// Hitbox sizes on foot and riding the big duck.
+const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 14, h: 24 } };
 
 // The Up-Down-Jumper. For now a colored box; the real sprite comes in the art milestone.
+// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir).
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, input) {
     super(scene, x, y, 'player');
@@ -9,32 +13,48 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     this.controls = input;
-    this.body.setSize(PLAYER.width, PLAYER.height);
+    this.body.setSize(SIZE.foot.w, SIZE.foot.h);
     this.body.setMaxVelocityY(PLAYER.maxFallSpeed);
     this.setCollideWorldBounds(true);
-    this.body.onWorldBounds = true;
 
     this.lastGroundedAt = -Infinity;
     this.jumpPressedAt = -Infinity;
     this.power = PLAYER.startPower;
-    this.fireballs = null; // set by the scene
+    this.shots = null; // set by the scene
+    this.hits = 0;
+    this.riding = false;
+    this.dead = false;
+    this.safeUntil = 0;
+    this.steerLockedUntil = 0;
+  }
+
+  get facing() {
+    return this.flipX ? -1 : 1;
+  }
+
+  get invulnerable() {
+    return this.dead || this.scene.time.now < this.safeUntil;
   }
 
   update(time, delta) {
+    if (this.dead) return;
     const dt = delta / 1000;
     const body = this.body;
     const c = this.controls;
     const onGround = body.blocked.down;
+    const canSteer = time >= this.steerLockedUntil;
 
     if (onGround) this.lastGroundedAt = time;
     if (c.jumpJustPressed()) this.jumpPressedAt = time;
 
     // Horizontal movement: accelerate toward the target speed instead of snapping to it.
-    const dir = (c.right() ? 1 : 0) - (c.left() ? 1 : 0);
+    const dir = canSteer ? (c.right() ? 1 : 0) - (c.left() ? 1 : 0) : 0;
     const maxSpeed = c.run() ? PLAYER.runSpeed : PLAYER.walkSpeed;
     let vx = body.velocity.x;
 
-    if (dir !== 0) {
+    if (!canSteer) {
+      // Slipping: slide along, steering returns in a moment.
+    } else if (dir !== 0) {
       const turning = vx !== 0 && Math.sign(vx) !== dir;
       const accel = !onGround ? PLAYER.airAccel : turning ? PLAYER.skidDecel : PLAYER.groundAccel;
       vx = approach(vx, dir * maxSpeed, accel * dt);
@@ -43,14 +63,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       vx = approach(vx, 0, PLAYER.groundDecel * dt);
     }
     // Letting go of run while above walk speed bleeds speed off gradually.
-    if (Math.abs(vx) > maxSpeed) vx = approach(vx, Math.sign(vx) * maxSpeed, PLAYER.groundDecel * dt);
+    if (canSteer && Math.abs(vx) > maxSpeed) vx = approach(vx, Math.sign(vx) * maxSpeed, PLAYER.groundDecel * dt);
     body.setVelocityX(vx);
 
     // Jump, with coyote time and an input buffer so it never feels like a press was eaten.
-    const canJump = time - this.lastGroundedAt <= PLAYER.coyoteMs;
+    const canJump = canSteer && time - this.lastGroundedAt <= PLAYER.coyoteMs;
     const buffered = time - this.jumpPressedAt <= PLAYER.jumpBufferMs;
     if (canJump && buffered) {
-      body.setVelocityY(-(PLAYER.jumpSpeed + Math.abs(vx) * PLAYER.runJumpBonus));
+      const boost = this.riding ? RIDE_DUCK.jumpBoost : 1;
+      body.setVelocityY(-(PLAYER.jumpSpeed + Math.abs(vx) * PLAYER.runJumpBonus) * boost);
       this.lastGroundedAt = -Infinity;
       this.jumpPressedAt = -Infinity;
     }
@@ -60,11 +81,80 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const extra = rising && c.jump() ? 0 : PLAYER.releaseGravity - PHYSICS.gravity;
     body.setGravityY(extra);
 
-    if (c.shootJustPressed() && this.power === 'fire' && this.fireballs) {
-      const dir = this.flipX ? -1 : 1;
-      this.fireballs.shoot(this.x + dir * 8, this.y - 2, dir);
+    if (c.shootJustPressed() && this.power === 'ducks' && this.shots) {
+      this.shots.shoot(this.x + this.facing * 8, this.y - 2, this.facing);
     }
+  }
 
+  // Stepped on a mango: slip forward. Riding, the duck runs off; on foot, it costs a hit.
+  slipOnMango() {
+    if (this.invulnerable) return;
+    const dir = this.facing;
+    this.body.setVelocity(dir * MANGO.slipSpeed, -MANGO.slipHop);
+    this.steerLockedUntil = this.scene.time.now + MANGO.slipLockMs;
+    this.takeHit();
+  }
+
+  // Any hit (mango, later enemies and bosses).
+  takeHit() {
+    if (this.invulnerable) return;
+    if (this.riding) {
+      this.dismount();
+      this.blink();
+      return;
+    }
+    this.hits += 1;
+    this.emit('hurt', this.hits);
+    if (this.hits >= PLAYER.maxHits) this.die();
+    else this.blink();
+  }
+
+  blink() {
+    this.safeUntil = this.scene.time.now + PLAYER.blinkMs;
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.15,
+      duration: 80,
+      yoyo: true,
+      repeat: Math.floor(PLAYER.blinkMs / 160) - 1,
+      onComplete: () => this.setAlpha(1),
+    });
+  }
+
+  // Mario-style death: pop up and fall through the floor.
+  die() {
+    this.dead = true;
+    this.body.checkCollision.none = true;
+    this.setCollideWorldBounds(false);
+    this.body.setGravityY(0);
+    this.body.setVelocity(0, -260);
+    this.emit('dead');
+  }
+
+  mount() {
+    if (this.riding || this.dead) return;
+    this.riding = true;
+    this.resize('rider', SIZE.riding);
+  }
+
+  dismount() {
+    if (!this.riding) return;
+    this.riding = false;
+    const { x } = this;
+    const bottom = this.body.bottom;
+    this.resize('player', SIZE.foot);
+    this.body.setVelocityY(-200); // jump off the duck
+    this.emit('dismount', x, bottom - 8, -this.facing);
+  }
+
+  // Swap texture and hitbox while keeping the feet where they were.
+  resize(texture, size) {
+    const bottom = this.body.bottom;
+    const velocity = this.body.velocity.clone();
+    this.setTexture(texture);
+    this.body.setSize(size.w, size.h);
+    this.body.reset(this.x, bottom - this.height / 2);
+    this.body.setVelocity(velocity.x, velocity.y);
   }
 }
 

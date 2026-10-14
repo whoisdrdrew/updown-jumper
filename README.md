@@ -17,7 +17,12 @@ Current state: **Milestone 1, core movement.** Gray-box graphics, one test level
 
   and open the address it prints (usually http://localhost:5173).
 
-Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot (hold it to run, like the Y button in Super Mario World), R to restart.
+Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot rubber ducks (hold it to run, like the Y button in Super Mario World), R to restart.
+
+Test level items:
+
+- **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
+- **Duck egg**: touch it or shoot it and a big duck hatches. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
 
 ## Project layout
 
@@ -26,7 +31,9 @@ Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), 
 | `src/config.js` | Every movement number (speeds, jump height, gravity). Tune the game feel here. |
 | `src/player/Player.js` | Player movement: acceleration, skidding, variable jump, coyote time, jump buffer. |
 | `src/player/Controls.js` | Keyboard mapping. |
-| `src/player/Fireballs.js` | The shoot button's bouncing fireballs. |
+| `src/player/RubberDucks.js` | The rubber ducks you shoot. |
+| `src/objects/Mangos.js` | Mangos: the slip hazard. |
+| `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 
