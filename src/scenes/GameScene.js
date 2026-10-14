@@ -18,7 +18,7 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.makePlaceholderTextures();
-    const { map, layer, start, goal, mangos, eggs } = this.buildLevel(testLevel);
+    const { map, layer, start, goal, mangos, eggs, pickups } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
     this.controls = new Controls(this);
     this.player = new Player(this, start.x, start.y, this.controls);
     this.physics.add.collider(this.player, layer);
-    this.addItems(layer, mangos, eggs);
+    this.addItems(layer, mangos, eggs, pickups);
 
     this.addGoal(goal);
 
@@ -57,7 +57,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // Rubber-duck shots, mangos and the ride-on duck, and how they touch each other.
-  addItems(layer, mangoPositions, eggPositions) {
+  addItems(layer, mangoPositions, eggPositions, pickupPositions) {
     const player = this.player;
     this.shots = new RubberDucks(this, layer);
     player.shots = this.shots;
@@ -86,6 +86,20 @@ export default class GameScene extends Phaser.Scene {
       player.mount();
     });
 
+    // Rubber ducks to collect, like coins: each one is one shot.
+    this.pickups = this.physics.add.staticGroup();
+    for (const { x, y } of pickupPositions) {
+      const duck = this.pickups.create(x, y, 'rubber-duck');
+      this.tweens.add({ targets: duck, y: y - 2, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+    this.physics.add.overlap(player, this.pickups, (_p, duck) => {
+      duck.body.enable = false;
+      this.tweens.killTweensOf(duck);
+      this.tweens.add({ targets: duck, y: duck.y - 14, alpha: 0, duration: 250, onComplete: () => duck.destroy() });
+      player.addAmmo(1);
+    });
+
+    player.on('ammo', () => this.updateHud());
     player.on('dismount', (x, y, dir) => this.rideDucks.flee(x, y, dir));
     player.on('hurt', () => this.updateHud());
     player.on('dead', () => {
@@ -94,18 +108,25 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // Hearts in the top-left corner: one is lost per hit, the last hit loses the life.
+  // Top-left: hearts (one lost per hit, the last hit loses the life) and rubber ducks left to shoot.
   addHud() {
     this.hearts = [];
     for (let i = 0; i < PLAYER.maxHits; i++) {
       this.hearts.push(this.add.image(8 + i * 10, 8, 'heart').setScrollFactor(0).setDepth(10));
     }
+    this.add.image(8, 20, 'rubber-duck').setScrollFactor(0).setDepth(10);
+    this.ammoText = this.add
+      .text(15, 15, '', { fontFamily: 'monospace', fontSize: '8px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 })
+      .setScrollFactor(0)
+      .setDepth(10)
+      .setResolution(4);
     this.updateHud();
   }
 
   updateHud() {
     const left = PLAYER.maxHits - this.player.hits;
     this.hearts.forEach((heart, i) => heart.setTexture(i < left ? 'heart' : 'heart-empty'));
+    this.ammoText.setText(`x${this.player.ammo}`);
   }
 
   // Turns the text level into a Phaser tilemap with collisions.
@@ -115,12 +136,14 @@ export default class GameScene extends Phaser.Scene {
     let goal = null;
     const mangos = [];
     const eggs = [];
+    const pickups = [];
 
     const data = rows.map((row, y) =>
       [...row.padEnd(width, ' ')].map((ch, x) => {
         if (ch === 'P') start = { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 };
         if (ch === 'F') goal = { x: x * TILE + TILE / 2, y: y * TILE };
         if (ch === 'M') mangos.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
+        if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
         if (ch === 'E') eggs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
@@ -143,7 +166,7 @@ export default class GameScene extends Phaser.Scene {
       if (below?.collides) below.faceTop = true;
     });
     this.children.remove(layer); // re-added after the background so it draws on top
-    return { map, layer, start, goal, mangos, eggs };
+    return { map, layer, start, goal, mangos, eggs, pickups };
   }
 
   addGoal(goal) {
@@ -271,12 +294,12 @@ export default class GameScene extends Phaser.Scene {
     g.generateTexture('big-duck', 18, 14);
     g.clear();
 
-    // Player riding the duck: the box sits on the duck's back.
-    g.fillStyle(0xe03030).fillRect(3, 0, 12, 13);
-    g.fillStyle(0xffffff).fillRect(10, 3, 3, 4);
-    g.fillStyle(0x000000).fillRect(12, 4, 1, 2);
-    bigDuck(12);
-    g.generateTexture('rider', 18, 26);
+    // Player riding the duck: the box sits on the duck's back, behind its head.
+    bigDuck(8);
+    g.fillStyle(0xe03030).fillRect(0, 0, 9, 14);
+    g.fillStyle(0xffffff).fillRect(5, 3, 3, 4);
+    g.fillStyle(0x000000).fillRect(7, 4, 1, 2);
+    g.generateTexture('rider', 18, 22);
     g.clear();
 
     // Hearts for the HUD.

@@ -33,6 +33,7 @@ export const PLAYER = {
   startPower: 'ducks',
 
   maxHits: 2, // the second mango slip (or other hit) loses a life
+  startAmmo: 0, // rubber ducks to shoot at the start; collect more in the level
   blinkMs: 1500, // after a hit the player blinks and can't be hurt again for this long
 };
 

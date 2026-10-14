@@ -17,10 +17,11 @@ Current state: **Milestone 1, core movement.** Gray-box graphics, one test level
 
   and open the address it prints (usually http://localhost:5173).
 
-Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot rubber ducks (hold it to run, like the Y button in Super Mario World), R to restart.
+Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), R to restart.
 
 Test level items:
 
+- **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Duck egg**: touch it or shoot it and a big duck hatches. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
 

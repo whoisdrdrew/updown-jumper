@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
 
 // Hitbox sizes on foot and riding the big duck.
-const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 14, h: 24 } };
+const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 14, h: 20 } };
 
 // The Up-Down-Jumper. For now a colored box; the real sprite comes in the art milestone.
-// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir).
+// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, input) {
     super(scene, x, y, 'player');
@@ -22,6 +22,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.power = PLAYER.startPower;
     this.shots = null; // set by the scene
     this.hits = 0;
+    this.ammo = PLAYER.startAmmo;
     this.riding = false;
     this.dead = false;
     this.safeUntil = 0;
@@ -81,9 +82,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const extra = rising && c.jump() ? 0 : PLAYER.releaseGravity - PHYSICS.gravity;
     body.setGravityY(extra);
 
-    if (c.shootJustPressed() && this.power === 'ducks' && this.shots) {
-      this.shots.shoot(this.x + this.facing * 8, this.y - 2, this.facing);
+    // Each shot uses up one collected rubber duck.
+    if (c.shootJustPressed() && this.power === 'ducks' && this.ammo > 0 && this.shots) {
+      if (this.shots.shoot(this.x + this.facing * 8, this.y - 2, this.facing)) this.addAmmo(-1);
     }
+  }
+
+  addAmmo(n) {
+    this.ammo += n;
+    this.emit('ammo', this.ammo);
   }
 
   // Stepped on a mango: slip forward. Riding, the duck runs off; on foot, it costs a hit.
