@@ -23,28 +23,40 @@ const PALETTE = {
   O: '#ff5a1a', // mango red-orange
   l: '#3cae4a', // leaf green
   p: '#ff5aa0', // pink
+  c: '#5ab8ff', // hair highlight
+  u: '#1a3a90', // mask eye holes
 };
 
-// The Up-Down-Jumper: white mask with a blue and gold spiky crown, black tee, jeans. Faces right.
+// The Up-Down-Jumper, after the character sheet (art/hero-character-sheet.png in the project files):
+// chibi proportions, tall blue spiky hair, white mask with gold ornament and blue eye holes,
+// black tee, blue jeans, white sneakers. 16x24; the hair sticks out above the hitbox.
 const HERO_TOP = [
-  '..w..g..w.....',
-  '..wB.gg.Bw....',
-  '.wBwBggBwBw...',
-  '.kwwwwwwwwwk..',
-  '.kgbbggbbgk...',
-  '.kwkkwwwkkwk..',
-  '..kwwwwwwwk...',
-  '...kwwrrwk....',
-  '...kddddk.....',
-  '..kdddddDk....',
-  '.sdddgddddds..',
-  '.s.ddddddk.s..',
+  '......k...k.....',
+  '...k.kbk.kck.k..',
+  '..kbkkbckbcbkck.',
+  '..kbcbbccbbcbbk.',
+  '.kbbcBbcBbbcbbk.',
+  'kbbbbbbbbbbbbbbk',
+  'kbbwwwwgwwwwbbk.',
+  '.kbwgwwgwwgwbk..',
+  '.kwwggwgwggwwk..',
+  '.kwuuuwgwuuuwk..',
+  '.kwwuuwwwuuwwk..',
+  '..kwwwwwwwwwk...',
+  '..kwgwkkkwgwk...',
+  '...kWwwwwwWk....',
+  '....kkkkkkk.....',
+  '...kdddddddk....',
+  '..ksddddDddsk...',
+  '..ksdddddddsk...',
+  '..kskdddddksk...',
+  '...kknnnnnkk....',
 ];
 const HERO_LEGS = {
-  idle: ['...nnNnnn.....', '...nn..nn.....', '...nn..nn.....', '..www..www....'],
-  run1: ['...nnNnnn.....', '..nn....nn....', '.nn......nn...', 'ww........ww..'],
-  run2: ['...nnNnnn.....', '....nnnn......', '....nn.nn.....', '...www.ww.....'],
-  jump: ['...nnNnnn.....', '..nn...nn.....', '.ww....nn.....', '.......ww.....'],
+  idle: ['....knnknnk.....', '....knnknnk.....', '...kwwwkwwwk....', '...kkkkkkkkk....'],
+  run1: ['...knnk.knnk....', '..knnk...knnk...', '.kwwwk...kwwwk..', '.kkkk.....kkkk..'],
+  run2: ['....knnnnk......', '.....knnk.......', '....kwwwwk......', '....kkkkk.......'],
+  jump: ['...knnk..knnk...', '..kwwwk...knnk..', '..kkkk...kwwwk..', '..........kkkk..'],
 };
 
 const BIG_DUCK = [
@@ -114,7 +126,7 @@ export function createSprites(scene) {
   for (const [pose, legs] of Object.entries(HERO_LEGS)) make(`hero-${pose}`, [...HERO_TOP, ...legs]);
   make('big-duck', BIG_DUCK);
   // Riding: the hero's upper body sits on the duck's back, behind its head.
-  make('rider', compose(20, 24, [{ rows: BIG_DUCK, x: 2, y: 10 }, { rows: HERO_TOP, x: -1, y: 0 }]));
+  make('rider', compose(25, 26, [{ rows: BIG_DUCK, x: 7, y: 12 }, { rows: HERO_TOP.slice(0, 19), x: 0, y: 0 }]));
   make('rubber-duck', RUBBER_DUCK);
   make('mango', MANGO);
   make('egg', EGG);

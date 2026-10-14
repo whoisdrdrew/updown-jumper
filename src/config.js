@@ -12,7 +12,7 @@ export const PHYSICS = {
 
 export const PLAYER = {
   width: 10, // hitbox; the sprite is a little wider
-  height: 16,
+  height: 20, // hitbox from sneakers to forehead; the spiky hair is drawn above it
 
   walkSpeed: 90,
   runSpeed: 150,
