@@ -56,7 +56,7 @@ export const MANGO = {
 export const RIDE_DUCK = {
   eggRollSpeed: 50, // an egg from a music-note block hops out sideways...
   hatchDelayMs: 600, // ...lands, wobbles, and hatches after this long (or when touched)
-  jumpBoost: 1.1, // jumps a bit higher while riding
+  jumpBoost: 1.2, // jumps higher while riding (about 4 tiles from standing instead of 3)
   fleeSpeed: 130, // when you get hit, the duck runs off this fast...
   fleeRemountMs: 600, // ...and can be caught again after this long, if you're quick
 };

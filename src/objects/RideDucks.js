@@ -38,6 +38,7 @@ export default class RideDucks {
         onComplete: () => half.destroy(),
       });
     }
+    if (this.scene.player.riding) return null; // already have a duck
     const duck = this.spawnDuck(x, y - 4, 0, 300);
     duck.body.setVelocityY(-180);
     return duck;
@@ -60,6 +61,17 @@ export default class RideDucks {
 
   canMount(duck) {
     return this.scene.time.now >= duck.mountableAt;
+  }
+
+  // There is only ever one big duck: once you ride it, any other duck in the level disappears
+  // and eggs that are still around hatch empty.
+  onMounted() {
+    this.ducks.children.each((duck) => {
+      duck.body.enable = false;
+      duck.setVisible(false);
+    });
+    // Removed on the next tick, not in the middle of the physics step that detected the mount.
+    this.scene.time.delayedCall(0, () => this.ducks.clear(true, true));
   }
 
   update() {

@@ -83,8 +83,8 @@ export default class GameScene extends Phaser.Scene {
     });
     this.physics.add.overlap(player, this.rideDucks.ducks, (_p, duck) => {
       if (player.riding || player.dead || !this.rideDucks.canMount(duck)) return;
-      duck.destroy();
       player.mount();
+      this.rideDucks.onMounted();
     });
 
     // Rubber ducks to collect, like coins: each one is one shot.
