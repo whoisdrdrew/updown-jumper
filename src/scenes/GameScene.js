@@ -5,11 +5,10 @@ import Controls from '../player/Controls.js';
 import RubberDucks from '../player/RubberDucks.js';
 import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
+import Blocks, { T } from '../objects/Blocks.js';
 import { PLAYER } from '../config.js';
 import testLevel from '../levels/testLevel.js';
 
-// Tile indexes in the placeholder tileset.
-const T = { GRASS: 0, BLOCK: 1, PLATFORM: 2, DIRT: 3 };
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -18,7 +17,7 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.makePlaceholderTextures();
-    const { map, layer, start, goal, mangos, eggs, pickups } = this.buildLevel(testLevel);
+    const { map, layer, start, goal, mangos, eggs, pickups, blockContents } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -31,7 +30,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.controls = new Controls(this);
     this.player = new Player(this, start.x, start.y, this.controls);
-    this.physics.add.collider(this.player, layer);
+    this.blocks = new Blocks(this, layer, blockContents);
+    this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
     this.addItems(layer, mangos, eggs, pickups);
 
     this.addGoal(goal);
@@ -75,8 +75,9 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // Break the egg by touching it or hitting it with a rubber duck.
-    this.physics.add.overlap(player, this.rideDucks.eggs, (_p, egg) => this.rideDucks.breakEgg(egg));
-    this.physics.add.overlap(this.shots.group, this.rideDucks.eggs, (shot, egg) => {
+    const eggs = [this.rideDucks.eggs, this.rideDucks.poppedEggs];
+    this.physics.add.overlap(player, eggs, (_p, egg) => this.rideDucks.breakEgg(egg));
+    this.physics.add.overlap(this.shots.group, eggs, (shot, egg) => {
       this.rideDucks.breakEgg(egg);
       this.shots.pop(shot);
     });
@@ -99,6 +100,15 @@ export default class GameScene extends Phaser.Scene {
       player.addAmmo(1);
     });
 
+    // What comes out of a music-note block: a rubber duck (collected right away) or the duck egg.
+    this.events.on('block-item', (item, x, y) => {
+      if (item === 'egg') return this.rideDucks.popEgg(x, y);
+      const duck = this.add.image(x, y - 4, 'rubber-duck');
+      this.tweens.add({ targets: duck, y: y - 28, duration: 250, ease: 'Quad.easeOut', yoyo: true, hold: 60,
+        onComplete: () => duck.destroy() });
+      player.addAmmo(1);
+    });
+
     player.on('ammo', () => this.updateHud());
     player.on('dismount', (x, y, dir) => this.rideDucks.flee(x, y, dir));
     player.on('hurt', () => this.updateHud());
@@ -116,7 +126,7 @@ export default class GameScene extends Phaser.Scene {
     }
     this.add.image(8, 20, 'rubber-duck').setScrollFactor(0).setDepth(10);
     this.ammoText = this.add
-      .text(15, 15, '', { fontFamily: 'monospace', fontSize: '8px', color: '#ffffff', stroke: '#000000', strokeThickness: 2 })
+      .text(15, 14, '', { fontFamily: 'monospace', fontSize: '9px', fontStyle: 'bold', color: '#ffffff', stroke: '#000000', strokeThickness: 3 })
       .setScrollFactor(0)
       .setDepth(10)
       .setResolution(4);
@@ -137,6 +147,7 @@ export default class GameScene extends Phaser.Scene {
     const mangos = [];
     const eggs = [];
     const pickups = [];
+    const blockContents = new Map();
 
     const data = rows.map((row, y) =>
       [...row.padEnd(width, ' ')].map((ch, x) => {
@@ -147,6 +158,11 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'E') eggs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
+        if (ch === 'b') return T.BRICK;
+        if (ch === 'N' || ch === 'Y') {
+          blockContents.set(`${x},${y}`, ch === 'Y' ? 'egg' : 'duck');
+          return T.NOTE;
+        }
         if (ch === '=') return T.PLATFORM;
         return -1;
       }),
@@ -155,7 +171,7 @@ export default class GameScene extends Phaser.Scene {
     const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
     const tileset = map.addTilesetImage('tiles');
     const layer = map.createLayer(0, tileset, 0, 0);
-    layer.setCollision([T.GRASS, T.BLOCK, T.DIRT]);
+    layer.setCollision([T.GRASS, T.BLOCK, T.DIRT, T.NOTE, T.USED, T.BRICK]);
     // Thin platforms only block from above.
     layer.forEachTile((tile) => {
       if (tile.index !== T.PLATFORM) return;
@@ -166,7 +182,7 @@ export default class GameScene extends Phaser.Scene {
       if (below?.collides) below.faceTop = true;
     });
     this.children.remove(layer); // re-added after the background so it draws on top
-    return { map, layer, start, goal, mangos, eggs, pickups };
+    return { map, layer, start, goal, mangos, eggs, pickups, blockContents };
   }
 
   addGoal(goal) {
@@ -249,7 +265,20 @@ export default class GameScene extends Phaser.Scene {
     // 3 dirt
     g.fillStyle(0x8a5a2b).fillRect(48, 0, 16, 16);
     g.fillStyle(0x6e4520).fillRect(52, 5, 2, 2).fillRect(58, 11, 2, 2);
-    g.generateTexture('tiles', 64, 16);
+    // 4 music-note block (our "?" block)
+    g.fillStyle(0x000000).fillRect(64, 0, 16, 16);
+    g.fillStyle(0xf0b000).fillRect(65, 1, 14, 14);
+    g.fillStyle(0xffe070).fillRect(65, 1, 14, 1).fillRect(65, 1, 1, 14);
+    g.fillStyle(0x000000).fillRect(72, 3, 1, 8).fillRect(73, 3, 3, 1).fillRect(75, 4, 1, 2).fillRect(69, 10, 4, 3); // eighth note
+    // 5 used (empty) block
+    g.fillStyle(0x000000).fillRect(80, 0, 16, 16);
+    g.fillStyle(0x8a6a4a).fillRect(81, 1, 14, 14);
+    g.fillStyle(0x5a4030).fillRect(83, 3, 1, 1).fillRect(92, 3, 1, 1).fillRect(83, 12, 1, 1).fillRect(92, 12, 1, 1);
+    // 6 breakable brick
+    g.fillStyle(0xb8642a).fillRect(96, 0, 16, 16);
+    g.fillStyle(0x5a2a10).fillRect(96, 7, 16, 1).fillRect(96, 15, 16, 1).fillRect(103, 0, 1, 7).fillRect(99, 8, 1, 7).fillRect(107, 8, 1, 7);
+    g.fillStyle(0xe08a50).fillRect(96, 0, 16, 1);
+    g.generateTexture('tiles', 112, 16);
     g.clear();
 
     // Player: red box with an eye on the facing side.

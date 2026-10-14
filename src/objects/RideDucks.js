@@ -8,11 +8,21 @@ export default class RideDucks {
     this.eggs = scene.physics.add.staticGroup();
     for (const { x, y } of eggPositions) this.eggs.create(x, y - 7, 'egg');
 
+    // Eggs that came out of a music-note block: they hop out, land, and hatch.
+    this.poppedEggs = scene.physics.add.group();
+    scene.physics.add.collider(this.poppedEggs, layer);
+
     this.ducks = scene.physics.add.group();
     scene.physics.add.collider(this.ducks, layer);
   }
 
+  popEgg(x, blockTop) {
+    const egg = this.poppedEggs.create(x, blockTop - 7, 'egg');
+    egg.body.setVelocity(RIDE_DUCK.eggRollSpeed, -160);
+  }
+
   breakEgg(egg) {
+    if (!egg.active) return;
     const { x, y } = egg;
     egg.destroy();
     // Two shell halves fly apart.
@@ -53,6 +63,14 @@ export default class RideDucks {
   }
 
   update() {
+    this.poppedEggs.children.each((egg) => {
+      if (!egg.body.blocked.down || egg.hatching) return;
+      egg.hatching = true;
+      egg.body.setVelocityX(0);
+      this.scene.tweens.add({ targets: egg, angle: { from: -12, to: 12 }, duration: 80, yoyo: true, repeat: 3 }); // wobble
+      this.scene.time.delayedCall(RIDE_DUCK.hatchDelayMs, () => this.breakEgg(egg));
+    });
+
     const view = this.scene.cameras.main.worldView;
     this.ducks.children.each((duck) => {
       if (!duck.dir) {

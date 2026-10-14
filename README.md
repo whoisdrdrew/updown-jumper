@@ -23,7 +23,8 @@ Test level items:
 
 - **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
-- **Duck egg**: touch it or shoot it and a big duck hatches. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
+- **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
+- **Duck egg**: comes out of a music-note block and hatches by itself (or touch or shoot it) into a big duck. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
 
 ## Project layout
 
@@ -34,6 +35,7 @@ Test level items:
 | `src/player/Controls.js` | Keyboard mapping. |
 | `src/player/RubberDucks.js` | The rubber ducks you shoot. |
 | `src/objects/Mangos.js` | Mangos: the slip hazard. |
+| `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
