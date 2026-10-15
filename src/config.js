@@ -64,3 +64,20 @@ export const RIDE_DUCK = {
   fleeSpeed: 130, // when you get hit, the duck runs off this fast...
   fleeRemountMs: 600, // ...and can be caught again after this long, if you're quick
 };
+
+// The end boss of world 1, Solomun. Mario 3 Koopaling rules: three hits and he's out, and after
+// each hit he spins for a moment (can't be hurt) and gets a little faster.
+export const BOSS = {
+  hits: 3, // a stomp or a rubber duck each take one
+  floatSpeed: 0.9, // how fast he drifts across the arena (sway cycles per second x 2pi)
+  floatRange: 110, // how far left and right of the arena centre he drifts
+  hoverHeight: 70, // pixels above the floor while floating
+  maxSpeed: 110, // top flying speed
+  swoopSpeed: 130, // top speed when he dives at the player
+  floatMs: 2600, // time floating before the next towel attack
+  windupMs: 600, // towel waving before the dive: the warning
+  lowMs: 900, // time spent low over the floor after a dive (when ducks can reach him)
+  hurtMs: 1200, // spinning after a hit, can't be hurt again
+  speedUpPerHit: 1.2, // Koopaling style: faster after every hit
+  stompBounce: 260, // the player bounces off his head this fast
+};

@@ -19,6 +19,11 @@ import heartEmpty from './world/heart-empty.png';
 import brickPiece from './world/brick-piece.png';
 import goalFlag from './world/goal-flag.png';
 import goalPole from './world/goal-pole.png';
+import solomunMeditate from './solomun/meditate.png';
+import solomunAttack from './solomun/attack.png';
+import solomunDefeat from './solomun/defeat.png';
+import solomunTowel from './solomun/towel.png';
+import solomunPortrait from './solomun/portrait.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
@@ -51,6 +56,12 @@ export function preloadSprites(scene) {
   scene.load.image('brick-piece', brickPiece);
   scene.load.image('goal-flag', goalFlag);
   scene.load.image('goal-pole', goalPole);
+  // Solomun, the world 1 boss (art/solomun/ in the project files), hero-sized.
+  scene.load.image('solomun-meditate', solomunMeditate);
+  scene.load.image('solomun-attack', solomunAttack);
+  scene.load.image('solomun-defeat', solomunDefeat);
+  scene.load.image('solomun-towel', solomunTowel);
+  scene.load.image('solomun-portrait', solomunPortrait);
 }
 
 // Everything is drawn at twice the world resolution and shown at half size.

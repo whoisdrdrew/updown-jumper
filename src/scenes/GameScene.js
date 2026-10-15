@@ -7,7 +7,8 @@ import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
-import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM } from '../config.js';
+import Boss from '../objects/Boss.js';
+import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
 import { createBackground, preloadBackground } from '../art/background.js';
@@ -33,7 +34,7 @@ export default class GameScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createSprites(this);
-    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -41,6 +42,7 @@ export default class GameScene extends Phaser.Scene {
     this.add.existing(layer);
     this.add.existing(view);
     this.layer = layer;
+    this.map = map;
 
     // Open bottom edge: falling into a pit leaves the world.
     this.physics.world.setBounds(0, 0, worldW, worldH, true, true, true, false);
@@ -60,6 +62,7 @@ export default class GameScene extends Phaser.Scene {
     cam.setRoundPixels(true);
 
     this.addHud();
+    if (bossAt) this.addBossArena(bossAt);
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.finished = false;
     this.worldH = worldH;
@@ -71,6 +74,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.update(time, delta);
     this.shots.update();
     this.rideDucks.update();
+    if (this.boss?.active) this.boss.update(time);
     if (this.player.y > this.worldH + 32) this.respawn();
   }
 
@@ -189,6 +193,7 @@ export default class GameScene extends Phaser.Scene {
     const eggs = [];
     const pickups = [];
     let suitcase = null;
+    let bossAt = null;
     const blockContents = new Map();
 
     const data = rows.map((row, y) =>
@@ -198,6 +203,7 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'M') mangos.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
         if (ch === 'S') suitcase = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
+        if (ch === 'K') bossAt = { x: x * TILE + TILE / 2, y: y * TILE };
         if (ch === 'E') eggs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
@@ -229,7 +235,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.children.remove(layer); // re-added after the background so it draws on top
     this.children.remove(view);
-    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase };
+    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt };
   }
 
   addGoal(goal) {
@@ -243,6 +249,72 @@ export default class GameScene extends Phaser.Scene {
     const zone = this.add.zone(goal.x, goal.y + poleH / 2, 10, poleH);
     this.physics.add.existing(zone, true);
     this.physics.add.overlap(this.player, zone, () => this.levelClear());
+  }
+
+  // The boss arena: one screen wide, centred on the K in the level. Walking in shuts it, like the
+  // boss rooms in Mario 3, and it opens again (on the way to the flag) once Solomun is beaten.
+  addBossArena(at) {
+    const floor = this.findGroundBelow(at.x, at.y);
+    const half = GAME_WIDTH / 2;
+    this.arena = { centerX: at.x, left: at.x - half, right: at.x + half, floor, top: 0 };
+    const zone = this.add.zone(this.arena.left + 48, floor - 40, 8, 80);
+    this.physics.add.existing(zone, true);
+    const trigger = this.physics.add.overlap(this.player, zone, () => {
+      trigger.destroy();
+      this.startBossFight();
+    });
+  }
+
+  startBossFight() {
+    const { arena, player } = this;
+    const cam = this.cameras.main;
+    this.physics.world.setBounds(arena.left, 0, GAME_WIDTH, this.worldH, true, true, true, false);
+    cam.stopFollow();
+    cam.pan(arena.centerX, cam.midPoint.y, 500, 'Sine.easeInOut', false, (_c, done) => {
+      if (!done) return;
+      cam.setBounds(arena.left, 0, GAME_WIDTH, this.worldH);
+      cam.startFollow(player, true, 0.2, 0.2);
+    });
+    const title = this.banner('SOLOMUN!');
+    this.time.delayedCall(1600, () => title.destroy());
+
+    const boss = (this.boss = new Boss(this, arena));
+    this.physics.add.overlap(player, boss, () => {
+      if (player.dead || boss.mode === 'defeated') return;
+      const stomp = player.body.velocity.y > 0 && player.body.bottom < boss.body.top + 10;
+      if (stomp) {
+        boss.takeHit();
+        player.body.setVelocityY(-BOSS.stompBounce);
+      } else if (boss.hurtable) {
+        player.takeHit();
+      }
+    });
+    this.physics.add.overlap(this.shots.group, boss, (_b, shot) => {
+      if (!shot.active || !boss.hurtable) return;
+      boss.takeHit();
+      this.shots.pop(shot);
+    });
+
+    // His hit points under the clock, like a boss bar.
+    const { x: ux, y: uy } = this.ui;
+    const right = ux + GAME_WIDTH - 6;
+    this.bossHud = [this.add.image(right - 38, uy + 31, 'solomun-portrait').setScale(0.5).setOrigin(1, 0.5)];
+    for (let i = 0; i < BOSS.hits; i++) {
+      this.bossHud.push(this.add.image(right - 30 + i * 10, uy + 31, 'heart').setScale(ITEM_SCALE));
+    }
+    this.bossHud.forEach((o) => o.setScrollFactor(0).setDepth(10));
+
+    boss.on('hit', (left) => this.bossHud.slice(1).forEach((h, i) => h.setTexture(i < left ? 'heart' : 'heart-empty')));
+    boss.on('defeated', () => this.endBossFight());
+  }
+
+  endBossFight() {
+    const cam = this.cameras.main;
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.worldH, true, true, true, false);
+    cam.setBounds(0, 0, this.map.widthInPixels, this.worldH);
+    this.bossHud.forEach((o) => o.destroy());
+    const text = this.banner('YOU WIN!');
+    this.time.delayedCall(1800, () => text.destroy());
   }
 
   findGroundBelow(x, y) {
@@ -270,7 +342,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   banner(text) {
-    this.add
+    return this.add
       .text(this.ui.x + GAME_WIDTH / 2, this.ui.y + 60, text, { fontFamily: FONT, fontSize: '16px', color: '#ffe680' })
       .setShadow(2, 2, '#1a1020', 0, false, true)
       .setOrigin(0.5)
