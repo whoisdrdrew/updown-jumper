@@ -1,4 +1,3 @@
-import { pixelTexture } from './pixels.js';
 import heroIdle from './hero/idle.png';
 import heroRun from './hero/run.png';
 import heroJump from './hero/jump.png';
@@ -12,6 +11,14 @@ import duckSmall from './duck/small.png';
 import caseClosed from './suitcase/closed.png';
 import caseMask from './suitcase/mask.png';
 import caseOpen from './suitcase/open.png';
+import mango from './world/mango.png';
+import egg from './world/egg.png';
+import eggHalf from './world/egg-half.png';
+import heart from './world/heart.png';
+import heartEmpty from './world/heart-empty.png';
+import brickPiece from './world/brick-piece.png';
+import goalFlag from './world/goal-flag.png';
+import goalPole from './world/goal-pole.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
@@ -27,74 +34,27 @@ export function preloadSprites(scene) {
   scene.load.image('bare-run', bareRun);
   scene.load.image('bare-jump', bareJump);
   scene.load.image('bare-sit', bareSit);
-  // The masked rubber duck (art/duck.png): full size for the ride-on duck, shrunk for the
-  // little ones you collect and shoot. Both are drawn at DUCK_SCALE, like the hero.
+  // The masked rubber duck: the ride-on one is drawn by tools/world_art.py, the little ones you
+  // collect and shoot are drawn by hand at their own size. Both are shown at DUCK_SCALE, like the hero.
   scene.load.image('big-duck', duckBig);
   scene.load.image('rubber-duck', duckSmall);
-  // The suitcase the mask starts in (art/suitcase-front.png), shrunk to sit a little under head height.
+  // The suitcase the mask starts in (art/suitcase-front.png in the project files).
   scene.load.image('case-closed', caseClosed);
   scene.load.image('case-mask', caseMask);
   scene.load.image('case-open', caseOpen);
+  // Items, drawn at the hero's pixel size by tools/world_art.py. Shown at ITEM_SCALE like the hero.
+  scene.load.image('mango', mango);
+  scene.load.image('egg', egg);
+  scene.load.image('egg-half', eggHalf);
+  scene.load.image('heart', heart);
+  scene.load.image('heart-empty', heartEmpty);
+  scene.load.image('brick-piece', brickPiece);
+  scene.load.image('goal-flag', goalFlag);
+  scene.load.image('goal-pole', goalPole);
 }
 
-// Placeholder pixel art in the style of the Ibiza club reference (art/style-reference.png in the
-// project files). Swap these for real sprite sheets in the art milestone.
-
-const PALETTE = {
-  k: '#150b22', // outline (style guide)
-  w: '#f4f4f4', // white
-  W: '#c8d0dc', // white shade
-  b: '#2f5fd0', // blue
-  B: '#8ec8ff', // light blue
-  g: '#f2c230', // gold
-  G: '#b07a10', // dark gold
-  r: '#d03040', // red
-  d: '#26262e', // black tee
-  D: '#3a3a46', // tee highlight
-  s: '#f0c090', // skin
-  n: '#2a3f8a', // jeans
-  N: '#1c2a60', // jeans shade
-  y: '#ffd400', // duck yellow
-  Y: '#e0a800', // duck shade
-  o: '#ff8a00', // orange
-  O: '#ff5a1a', // mango red-orange
-  l: '#3cae4a', // leaf green
-  p: '#ff5aa0', // pink
-};
-
-const MANGO = [
-  '.....ll...',
-  '....ll....',
-  '..kkkkkk..',
-  '.kooooook.',
-  'koyyoooook',
-  'kooooooook',
-  'kooooooOOk',
-  '.koooOOOk.',
-  '..kkkkkk..',
-];
-
-const EGG = [
-  '....kkkk....',
-  '...kwwwwk...',
-  '..kwwggwwk..',
-  '.kwwwggwwwk.',
-  '.kwwwwwwwwk.',
-  'kwggwwwwwwwk',
-  'kwggwwwwggwk',
-  'kwwwwwwwggwk',
-  'kwwwwggwwwWk',
-  'kwwwwggwwwWk',
-  '.kwwwwwwwWk.',
-  '.kWwwwwwWWk.',
-  '..kkWWWWkk..',
-  '....kkkk....',
-];
-const EGG_HALF = ['..kkk.', '.kwwwk', 'kwggwk', 'kwggwk', 'kwwwwk', 'kwwwWk', '.kWWWk', '..kkk.'];
-
-const HEART = ['.kk.kk..', 'krrkrrk.', 'krrrrrrk', 'krrrrrrk', '.krrrrk.', '..krrk..', '...kk...'];
-const HEART_EMPTY = HEART.map((r) => r.replace(/r/g, 'D'));
-
+// Everything is drawn at twice the world resolution and shown at half size.
+export const ITEM_SCALE = 0.5;
 export const DUCK_SCALE = 0.5;
 
 // Riding: the sitting pose on the duck's back, behind its masked head. Hero and duck pictures
@@ -114,13 +74,6 @@ function makeRider(scene, look) {
 }
 
 export function createSprites(scene) {
-  const make = (key, rows) => pixelTexture(scene, key, rows, PALETTE);
-
   makeRider(scene, 'hero');
   makeRider(scene, 'bare');
-  make('mango', MANGO);
-  make('egg', EGG);
-  make('egg-half', EGG_HALF);
-  make('heart', HEART);
-  make('heart-empty', HEART_EMPTY);
 }

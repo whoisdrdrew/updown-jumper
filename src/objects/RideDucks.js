@@ -1,5 +1,5 @@
 import { RIDE_DUCK } from '../config.js';
-import { DUCK_SCALE } from '../art/sprites.js';
+import { DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 
 // The big ride-on duck, Super Mario World Yoshi style: break the egg, the duck hops out,
 // jump on to ride it. When you get hit while riding, the duck runs away instead of you losing a life.
@@ -7,7 +7,7 @@ export default class RideDucks {
   constructor(scene, layer, eggPositions) {
     this.scene = scene;
     this.eggs = scene.physics.add.staticGroup();
-    for (const { x, y } of eggPositions) this.eggs.create(x, y - 7, 'egg');
+    for (const { x, y } of eggPositions) this.eggs.create(x, y - 7, 'egg').setScale(ITEM_SCALE).refreshBody();
 
     // Eggs that came out of a music-note block: they hop out, land, and hatch.
     this.poppedEggs = scene.physics.add.group();
@@ -18,7 +18,7 @@ export default class RideDucks {
   }
 
   popEgg(x, blockTop) {
-    const egg = this.poppedEggs.create(x, blockTop - 7, 'egg');
+    const egg = this.poppedEggs.create(x, blockTop - 7, 'egg').setScale(ITEM_SCALE);
     egg.body.setVelocity(RIDE_DUCK.eggRollSpeed, -160);
   }
 
@@ -28,7 +28,7 @@ export default class RideDucks {
     egg.destroy();
     // Two shell halves fly apart.
     for (const dir of [-1, 1]) {
-      const half = this.scene.add.image(x + dir * 3, y, 'egg-half').setFlipX(dir > 0);
+      const half = this.scene.add.image(x + dir * 3, y, 'egg-half').setScale(ITEM_SCALE).setFlipX(dir > 0);
       this.scene.tweens.add({
         targets: half,
         x: x + dir * 24,

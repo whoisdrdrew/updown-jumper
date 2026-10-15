@@ -1,11 +1,13 @@
+import { ITEM_SCALE } from '../art/sprites.js';
+
 // Mangos lying on the floor. Touching one makes the player slip. Shoot them away or jump over them.
 export default class Mangos {
   constructor(scene, positions) {
     this.scene = scene;
     this.group = scene.physics.add.group({ allowGravity: false, immovable: true });
     for (const { x, y } of positions) {
-      const mango = this.group.create(x, y - 4, 'mango');
-      mango.body.setSize(10, 7);
+      const mango = this.group.create(x, y - 5, 'mango').setScale(ITEM_SCALE);
+      mango.body.setSize(20, 14); // picture pixels: 10x7 in the world
     }
   }
 
