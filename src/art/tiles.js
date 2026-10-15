@@ -8,7 +8,7 @@ const C = {
   gold: '#f2c230',
   goldLight: '#ffe680',
   goldDark: '#b07a10',
-  outline: '#1a1020',
+  outline: '#150b22',
   brick: '#b8642a',
   brickLight: '#e08a50',
   brickDark: '#5a2a10',

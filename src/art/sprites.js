@@ -41,7 +41,7 @@ export function preloadSprites(scene) {
 // project files). Swap these for real sprite sheets in the art milestone.
 
 const PALETTE = {
-  k: '#1a1020', // outline
+  k: '#150b22', // outline (style guide)
   w: '#f4f4f4', // white
   W: '#c8d0dc', // white shade
   b: '#2f5fd0', // blue
