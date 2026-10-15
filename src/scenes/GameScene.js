@@ -8,7 +8,7 @@ import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM } from '../config.js';
-import { createSprites, preloadSprites } from '../art/sprites.js';
+import { createSprites, preloadSprites, DUCK_SCALE } from '../art/sprites.js';
 import { createTiles } from '../art/tiles.js';
 import { createBackground } from '../art/background.js';
 
@@ -106,7 +106,7 @@ export default class GameScene extends Phaser.Scene {
     // Rubber ducks to collect, like coins: each one is one shot.
     this.pickups = this.physics.add.staticGroup();
     for (const { x, y } of pickupPositions) {
-      const duck = this.pickups.create(x, y, 'rubber-duck');
+      const duck = this.pickups.create(x, y, 'rubber-duck').setScale(DUCK_SCALE).refreshBody();
       this.tweens.add({ targets: duck, y: y - 2, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
     this.physics.add.overlap(player, this.pickups, (_p, duck) => {
@@ -119,7 +119,7 @@ export default class GameScene extends Phaser.Scene {
     // What comes out of a music-note block: a rubber duck (collected right away) or the duck egg.
     this.events.on('block-item', (item, x, y) => {
       if (item === 'egg') return this.rideDucks.popEgg(x, y);
-      const duck = this.add.image(x, y - 4, 'rubber-duck');
+      const duck = this.add.image(x, y - 4, 'rubber-duck').setScale(DUCK_SCALE);
       this.tweens.add({ targets: duck, y: y - 28, duration: 250, ease: 'Quad.easeOut', yoyo: true, hold: 60,
         onComplete: () => duck.destroy() });
       player.addAmmo(1);
@@ -149,7 +149,7 @@ export default class GameScene extends Phaser.Scene {
     for (let i = 0; i < PLAYER.maxHits; i++) {
       this.hearts.push(this.add.image(ux + 10 + i * 10, uy + 9, 'heart').setScrollFactor(0).setDepth(10));
     }
-    this.add.image(ux + 10, uy + 22, 'rubber-duck').setScrollFactor(0).setDepth(10);
+    this.add.image(ux + 10, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
     this.ammoText = text(17, 18, '');
     text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
     text(GAME_WIDTH / 2, 15, 'IBIZA WORLD 1-1', 0.5);

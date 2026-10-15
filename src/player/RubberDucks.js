@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SHOT } from '../config.js';
+import { DUCK_SCALE } from '../art/sprites.js';
 
 // Rubber ducks thrown with the shoot button. They hop along the ground and pop on walls.
 export default class RubberDucks {
@@ -13,10 +14,10 @@ export default class RubberDucks {
     if (this.group.countActive(true) >= SHOT.maxOnScreen) return false;
     const duck = this.group.get(x, y, 'rubber-duck');
     if (!duck) return false;
-    duck.setActive(true).setVisible(true).setFlipX(dir < 0).setAngle(0);
+    duck.setScale(DUCK_SCALE).setActive(true).setVisible(true).setFlipX(dir < 0).setAngle(0);
     duck.body.enable = true;
     duck.body.reset(x, y);
-    duck.body.setSize(7, 6);
+    duck.body.setSize(14, 12); // picture pixels: 7x6 in the world
     duck.body.setMaxVelocityY(SHOT.maxFallSpeed);
     duck.body.setVelocity(dir * SHOT.speed, SHOT.launchSpeed);
     duck.dir = dir;

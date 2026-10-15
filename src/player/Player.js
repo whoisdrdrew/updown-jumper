@@ -3,7 +3,7 @@ import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
 import { HERO_SCALE } from '../art/sprites.js';
 
 // Hitbox sizes on foot and riding the big duck.
-const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 18, h: 26 } };
+const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 20, h: 28 } };
 
 // The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).

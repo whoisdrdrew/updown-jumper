@@ -7,6 +7,8 @@ import bareIdle from './hero-bare/idle.png';
 import bareRun from './hero-bare/run.png';
 import bareJump from './hero-bare/jump.png';
 import bareSit from './hero-bare/sit.png';
+import duckBig from './duck/big.png';
+import duckSmall from './duck/small.png';
 import caseClosed from './suitcase/closed.png';
 import caseMask from './suitcase/mask.png';
 import caseOpen from './suitcase/open.png';
@@ -25,6 +27,10 @@ export function preloadSprites(scene) {
   scene.load.image('bare-run', bareRun);
   scene.load.image('bare-jump', bareJump);
   scene.load.image('bare-sit', bareSit);
+  // The masked rubber duck (art/duck.png): full size for the ride-on duck, shrunk for the
+  // little ones you collect and shoot. Both are drawn at DUCK_SCALE, like the hero.
+  scene.load.image('big-duck', duckBig);
+  scene.load.image('rubber-duck', duckSmall);
   // The suitcase the mask starts in (art/suitcase-*.png), shrunk to sit a little under head height.
   scene.load.image('case-closed', caseClosed);
   scene.load.image('case-mask', caseMask);
@@ -55,34 +61,6 @@ const PALETTE = {
   l: '#3cae4a', // leaf green
   p: '#ff5aa0', // pink
 };
-
-const BIG_DUCK = [
-  '.........kkkk.....',
-  '........kyyyyk....',
-  '........kyykyk....',
-  '........kyyyyokk..',
-  '........kyyyyoooo.',
-  '.kk.....kyyyyokk..',
-  'kyyk...kyyyyyk....',
-  'kyyykkkyyyyyyk....',
-  'kyyyyyyyyyyyyyk...',
-  'kyyYYYYyyyyyyyk...',
-  '.kyyYYYYyyyyyk....',
-  '..kyyyyyyyyyk.....',
-  '...kkkkkkkkk......',
-  '....oo...oo.......',
-];
-
-const RUBBER_DUCK = [
-  '....kkk..',
-  '...kyyyk.',
-  '...kykyoo',
-  'k..kyyyk.',
-  'kykkyyyk.',
-  'kyyyyyyyk',
-  '.kyYYyyk.',
-  '..kkkkk..',
-];
 
 const MANGO = [
   '.....ll...',
@@ -117,31 +95,29 @@ const EGG_HALF = ['..kkk.', '.kwwwk', 'kwggwk', 'kwggwk', 'kwwwwk', 'kwwwWk', '.
 const HEART = ['.kk.kk..', 'krrkrrk.', 'krrrrrrk', 'krrrrrrk', '.krrrrk.', '..krrk..', '...kk...'];
 const HEART_EMPTY = HEART.map((r) => r.replace(/r/g, 'D'));
 
-// Riding: the sitting pose on the duck's back, behind its head. Built at the hero's resolution
-// (two picture pixels per world pixel); the duck is drawn three times larger, which matches the
-// big duck standing in the level at RIDE_DUCK_SCALE.
-export const RIDE_DUCK_SCALE = 1.5;
-// 'hero-rider' (with mask) or 'bare-rider' (without), composed from the sitting pose.
+export const DUCK_SCALE = 0.5;
+
+// Riding: the sitting pose on the duck's back, behind its masked head. Hero and duck pictures
+// share a resolution (two picture pixels per world pixel), so they're drawn 1:1.
+// 'hero-rider' (with mask) or 'bare-rider' (without).
 function makeRider(scene, look) {
   const key = `${look}-rider`;
   if (scene.textures.exists(key)) return;
   const hero = scene.textures.get(`${look}-sit`).getSourceImage();
   const duck = scene.textures.get('big-duck').getSourceImage();
-  const tex = scene.textures.createCanvas(key, 55, 61);
+  const tex = scene.textures.createCanvas(key, 55, 67);
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(duck, 0, 0, 18, 14, 1, 19, 54, 42);
-  ctx.drawImage(hero, 0, 0); // seat on the rear of the back, clear of the neck; legs hang over its side
+  ctx.drawImage(duck, 8, 12);
+  ctx.drawImage(hero, 0, 0); // seat on the back, face and crown of the duck still showing
   tex.refresh();
 }
 
 export function createSprites(scene) {
   const make = (key, rows) => pixelTexture(scene, key, rows, PALETTE);
 
-  make('big-duck', BIG_DUCK);
   makeRider(scene, 'hero');
   makeRider(scene, 'bare');
-  make('rubber-duck', RUBBER_DUCK);
   make('mango', MANGO);
   make('egg', EGG);
   make('egg-half', EGG_HALF);
