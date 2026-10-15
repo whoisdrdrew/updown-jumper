@@ -31,7 +31,7 @@ export function preloadSprites(scene) {
   // little ones you collect and shoot. Both are drawn at DUCK_SCALE, like the hero.
   scene.load.image('big-duck', duckBig);
   scene.load.image('rubber-duck', duckSmall);
-  // The suitcase the mask starts in (art/suitcase-*.png), shrunk to sit a little under head height.
+  // The suitcase the mask starts in (art/suitcase-front.png), shrunk to sit a little under head height.
   scene.load.image('case-closed', caseClosed);
   scene.load.image('case-mask', caseMask);
   scene.load.image('case-open', caseOpen);
