@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, ZOOM, PHYSICS } from './config.js';
 import GameScene from './scenes/GameScene.js';
+import { setupTouchControls, touch } from './touch/TouchControls.js';
 
 function startGame() {
   const game = new Phaser.Game({
@@ -25,6 +26,13 @@ function startGame() {
   window.__game = game;
 }
 
+// Phones get on-screen controls under the game; done before the game starts so the game is sized
+// to the space that is left.
+setupTouchControls(() => window.__game);
+
 // Wait briefly for the pixel font so the HUD uses it from the first frame; fall back to monospace.
 const fontLoaded = document.fonts ? document.fonts.load('8px "Press Start 2P"').catch(() => {}) : Promise.resolve();
-Promise.race([fontLoaded, new Promise((resolve) => setTimeout(resolve, 2000))]).then(startGame);
+Promise.race([fontLoaded, new Promise((resolve) => setTimeout(resolve, 2000))]).then(() => {
+  startGame();
+  window.__game.events.once('ready', () => touch.applyOrientation?.());
+});

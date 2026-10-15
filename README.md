@@ -19,6 +19,8 @@ Current state: **Milestone 1, core movement**, with a first style pass after the
 
 Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), R to restart.
 
+On a phone or tablet, NES-style controls appear under the game instead: a cross on the left (up also jumps) and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
+
 Test level items:
 
 - **The mask**: every level starts without it. Jump on the suitcase in front of you: it opens, the mask goes on, and it stays on until you lose the life.
@@ -39,6 +41,7 @@ Test level items:
 | `src/objects/Mangos.js` | Mangos: the slip hazard. |
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
+| `src/touch/TouchControls.js` | On-screen controls for phones. |
 | `src/objects/Boss.js` | Solomun, the world 1 end boss. |
 | `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |

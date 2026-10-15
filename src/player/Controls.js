@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { touch } from '../touch/TouchControls.js';
 
-// Keyboard mapping in one place, so touch or gamepad controls can plug in later.
+// Keyboard and on-screen touch controls in one place (touch/TouchControls.js on phones).
 // Like the SNES Y button in Super Mario World, the action button shoots when tapped and runs when held.
 export default class Controls {
   constructor(scene) {
@@ -20,17 +21,24 @@ export default class Controls {
     this.actionKey.on('down', () => { this.shootQueued = true; });
   }
 
-  left() { return this.leftKey.isDown; }
-  right() { return this.rightKey.isDown; }
-  down() { return this.downKey.isDown; }
-  jump() { return this.jumpKey.isDown; }
-  jumpJustPressed() { return this.consume('jumpQueued'); }
-  run() { return this.actionKey.isDown; }
-  shootJustPressed() { return this.consume('shootQueued'); }
+  left() { return this.leftKey.isDown || touch.left; }
+  right() { return this.rightKey.isDown || touch.right; }
+  down() { return this.downKey.isDown || touch.down; }
+  // The up arrow, up on the cross and the JUMP button all jump.
+  jump() { return this.jumpKey.isDown || touch.jump || touch.up; }
+  jumpJustPressed() { return this.consume('jumpQueued') | consumeTouch('jumpQueued'); }
+  run() { return this.actionKey.isDown || touch.action; }
+  shootJustPressed() { return this.consume('shootQueued') | consumeTouch('shootQueued'); }
 
   consume(flag) {
     const pressed = this[flag];
     this[flag] = false;
     return pressed;
   }
+}
+
+function consumeTouch(flag) {
+  const pressed = touch[flag];
+  touch[flag] = false;
+  return pressed;
 }
