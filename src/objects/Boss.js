@@ -47,10 +47,10 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   // Hitbox: his head and round body, a little inside the outline, at the bottom of whichever
-  // picture is showing (the towel sticks out above it). Picture pixels: 22x23 in the world.
+  // picture is showing (the towel sticks out above it). Picture pixels: 19x24 in the world.
   fitBody() {
-    const w = 44;
-    const h = 46;
+    const w = 38;
+    const h = 48;
     this.body.setSize(w, h, false);
     this.body.setOffset((this.width - w) / 2, this.height - h - 2);
   }
