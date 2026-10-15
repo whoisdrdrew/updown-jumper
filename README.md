@@ -21,6 +21,8 @@ Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), 
 
 On a phone or tablet the game fills the screen and NES-style controls float, half see-through, over the brick floor: left and right keys on the left and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
 
+**Intro story**: the game starts in Boris's bedroom, like the start of a Mario game. He wakes up and wonders where Ginger is; walk him out of the door on the right. Outside, walk up to the horse and the story plays: the dialog, the note from the Guestlist King, and Boris storming off into level 1. Press up, Space, Enter or tap/click to move the dialog on (a press while text is typing shows it all). The first time it can't be skipped; once you've reached level 1 a SKIP button shows in the top right (or press Esc). That is remembered in the browser.
+
 Test level items:
 
 - **The mask**: every level starts without it. Jump on the suitcase in front of you: it opens, the mask goes on, and it stays on until you lose the life.
@@ -46,6 +48,8 @@ Test level items:
 | `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/art/` | Art. The hero, the little duck and the suitcase are cleaned from Sandro's art; the ride duck, tiles, items and backgrounds in `src/art/world/` are drawn by `tools/world_art.py` at the same pixel size (run `python3 tools/world_art.py` to redraw them). |
+| `src/scenes/IntroScene.js` | The intro story: bedroom and outside, the dialog box, speech bubble, letter and skip button. Pictures in `src/art/intro/`. |
+| `src/progress.js` | What's remembered in the browser (whether the intro has been seen). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 
 ## Publishing

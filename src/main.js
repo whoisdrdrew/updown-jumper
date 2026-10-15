@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, ZOOM, PHYSICS } from './config.js';
+import IntroScene from './scenes/IntroScene.js';
 import GameScene from './scenes/GameScene.js';
 import { setupTouchControls, touch } from './touch/TouchControls.js';
 
@@ -19,7 +20,7 @@ function startGame() {
       default: 'arcade',
       arcade: { gravity: { y: PHYSICS.gravity }, debug: false },
     },
-    scene: [GameScene],
+    scene: [IntroScene, GameScene], // the story intro first, then level 1
   });
 
   // Handy for debugging from the browser console.
