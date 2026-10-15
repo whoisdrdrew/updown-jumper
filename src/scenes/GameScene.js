@@ -64,6 +64,7 @@ export default class GameScene extends Phaser.Scene {
     this.addHud();
     if (bossAt) this.addBossArena(bossAt);
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.input.keyboard.on('keydown-S', () => this.scene.start('intro', { room: 'bedroom' })); // S: the story again
     this.finished = false;
     this.worldH = worldH;
   }

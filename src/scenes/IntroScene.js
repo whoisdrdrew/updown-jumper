@@ -42,6 +42,7 @@ export default class IntroScene extends Phaser.Scene {
     this.followers = [];
     this.input.on('pointerdown', () => { this.pressed = true; });
     this.input.keyboard.on('keydown-ENTER', () => { this.pressed = true; });
+    this.input.keyboard.on('keydown-S', () => this.scene.restart({ room: 'bedroom' })); // S: start the story over
 
     // A floor to stand on; the rooms are one screen each.
     const floor = this.add.zone(GAME_WIDTH / 2, FLOOR + 8, GAME_WIDTH * 2, 16);
