@@ -16,7 +16,7 @@ export default [
   '                                                                                                        ====                                                    ',
   '                                    oooo                                                                              o                                         ',
   '              o     o o            ======        oo               oo    ooooo          oooo        =====             B                                          ',
-  '              N    bNbHb                        o  o  oo          BB    bbHbb          ====     V                   BB                                          ',
+  '              N    bNbHb                        o  o  oo          BB    bbNbb          ====     V                   BB                                          ',
   '                               ======                 BB          BB                          =====                BBB                                    F     ',
   ' P S                       M              M           BB    M     BB        M     M                 M         M   BBBB   oooo                                   ',
   '#################################################  #####################################  ######################################################################',
