@@ -19,6 +19,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.fitBody(SIZE.foot);
     this.body.setMaxVelocityY(PLAYER.maxFallSpeed);
     this.setCollideWorldBounds(true);
+    // In front of the suitcase, mangos, eggs and air puffs (which are made later or sit at depth 1).
+    this.setDepth(2);
 
     this.lastGroundedAt = -Infinity;
     this.jumpPressedAt = -Infinity;
