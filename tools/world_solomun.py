@@ -7,7 +7,7 @@ sprites. Every layer repeats seamlessly sideways.
 Layers (back to front):
   roof.png       the inside of the thatched roof with rafters, tie beams and far lamps (opaque)
   lamps.png      big wicker lamps hanging closer to the camera (transparent)
-  crowd-0..3.png the dancing crowd, 4 frames of a loop (transparent)
+  crowd-0..3.png the dancing crowd, 4 frames of a loop, with the SOLO ROOM sign above it (transparent)
 
 Run from the repo root:  python3 tools/world_solomun.py   (needs Pillow and numpy)
 """
@@ -272,6 +272,56 @@ def dancer(c, x, y, look, frame, phase, move, scale=1.0):
     c.paste(p, 0, 0)
 
 
+# ---------- SOLO ROOM sign (hangs above the crowd, in the crowd layer) ----------
+
+GLYPHS = {
+    'S': [' ######.', '########', '###..###', '####....', ' ######.', '....####', '###..###', '########', '.######.'],
+    'O': [' ######.', '########', '###..###', '###..###', '###..###', '###..###', '###..###', '########', '.######.'],
+    'L': ['###.....', '###.....', '###.....', '###.....', '###.....', '###.....', '###.....', '########', '########'],
+    'R': ['#######.', '########', '###..###', '###..###', '#######.', '######..', '###.###.', '###..###', '###..###'],
+    'M': ['###..###', '########', '########', '##.##.##', '###..###', '###..###', '###..###', '###..###', '###..###'],
+}
+SIGN_X, SIGN_Y, SIGN_R = 480, 118, 31          # centre and radius in the crowd layer
+SIGN_INK = ['#9a96a6', '#cfcdcd', '#fdfefd']    # ring and letters, slightly dimmed for the background
+
+
+def big(glyph):
+    """Stretch an 8x9 glyph to 10x11 by doubling a column on each side and a row top and bottom."""
+    rows = [r[:2] + r[2] + r[2:6] + r[5] + r[6:] for r in glyph]
+    return rows[:2] + [rows[1]] + rows[2:7] + [rows[7]] + rows[7:]
+
+
+def word(c, text, cx, y, col):
+    width = len(text) * 10 + (len(text) - 1)
+    x = int(cx - width / 2)
+    for ch in text:
+        for gy, row in enumerate(big(GLYPHS[ch])):
+            for gx, v in enumerate(row):
+                if v == '#':
+                    c.px(x + gx, y + gy, col)
+        x += 11
+
+
+def solo_room_sign(c):
+    """A round black sign with a white ring and SOLO ROOM, after the Boiler Room logo, on two cords."""
+    cx, cy, r = SIGN_X, SIGN_Y, SIGN_R
+    for x in (cx - 14, cx + 14):
+        for y in range(0, cy - r + 6):
+            c.px(x, y, WOOD[3])
+    disc = c.ellipse_mask(cx, cy, r, r)
+    put(c, disc, '#0e0413')
+    ring = disc & ~c.ellipse_mask(cx, cy, r - 3, r - 3)
+    put(c, ring & c.ellipse_mask(cx, cy, r - 1, r - 1), SIGN_INK[1])
+    # A warm glint from the lamps on the top-left of the ring.
+    ys, xs = np.mgrid[0:c.h, 0:c.w]
+    put(c, ring & c.ellipse_mask(cx, cy, r - 1, r - 1) & ((xs - cx) + (ys - cy) < -r * 0.9), SIGN_INK[2])
+    word(c, 'SOLO', cx + 1, cy - 12, SIGN_INK[2])
+    word(c, 'ROOM', cx + 1, cy + 1, SIGN_INK[1])
+    p = np.pad(disc, 1)
+    n = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+    put(c, ~disc & n, OUTLINE)
+
+
 def crowd(frame):
     M = 40                                           # margin; whatever spills over wraps to the other side
     c = Canvas(W + 2 * M, H)
@@ -292,6 +342,7 @@ def crowd(frame):
     c.a[m, :3] = (c.a[m, :3] * 0.85 + np.array(rgb(THATCH[0])) * 0.15).astype(np.uint8)
     out = Canvas(W, H)
     out.a[:] = c.a[:, M:M + W]
+    solo_room_sign(out)
     for src, dst in ((slice(0, M), slice(W - M, W)), (slice(M + W, W + 2 * M), slice(0, M))):
         piece = c.a[:, src]
         m = piece[..., 3] > 0
