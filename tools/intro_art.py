@@ -424,6 +424,134 @@ def outside():
     return c
 
 
+# ---------- the note, the letter, the dialog box and the skip button ----------
+
+PAPER = ['#a68e72', '#cbb89a', '#e6d8bf', '#f5ecdc']
+INK = '#221533'
+VELVET = ['#4a1438', '#7a2452', '#a83a6a']
+UI_FILL = '#221533'
+SKIP_GLYPHS = {
+    'S': ['.####', '#....', '.###.', '....#', '####.'],
+    'K': ['#..#.', '#.#..', '##...', '#.#..', '#..#.'],
+    'I': ['###', '.#.', '.#.', '.#.', '###'],
+    'P': ['####.', '#...#', '####.', '#....', '#....'],
+}
+
+
+def note_ground():
+    """The folded note lying on the grass, with a tiny crown seal."""
+    c = Canvas(18, 12)
+    pts = [(2, 4), (14, 2), (16, 9), (4, 11)]
+    ys, xs = np.mgrid[0:12, 0:18]
+    def side(a, b):
+        return (b[0] - a[0]) * (ys - a[1]) - (b[1] - a[1]) * (xs - a[0])
+    m = np.ones((12, 18), bool)
+    for i in range(4):
+        m &= side(pts[i], pts[(i + 1) % 4]) >= 0
+    shade_mask(c, m, PAPER[3:0:-1], np.clip((ys - 2) / 10 + (xs - 2) / 40, 0, 0.99))
+    put(c, m & (np.abs(side((3, 7), (15, 5))) < 6), PAPER[1])          # fold line
+    c.rect(8, 5, 3, 3, VELVET[1]); c.px(9, 5, GOLD[2])                  # wax seal with a crown dot
+    outline_of(c, m)
+    return c
+
+
+def letter():
+    """The big close-up of the note. The game writes the text on it (Press Start 2P), inside TEXT_BOX."""
+    w, h = 420, 250
+    c = Canvas(w, h)
+    ys, xs = np.mgrid[0:h, 0:w]
+    edge = (np.sin(xs / 7.0) * 1.5 + np.sin(xs / 3.1) * 0.8).astype(int)
+    edge_x = (np.sin(ys / 6.0) * 1.5 + np.sin(ys / 2.7) * 0.8).astype(int)
+    m = (ys >= 4 + edge) & (ys < h - 4 + edge) & (xs >= 4 + edge_x) & (xs < w - 4 + edge_x)
+    shade_mask(c, m, [PAPER[2], PAPER[3]], np.clip(((xs - w / 2) ** 2 / (w / 2) ** 2 + (ys - h / 2) ** 2 / (h / 2) ** 2) * 0.55 + ((xs + ys) % 2) * 0.12, 0, 0.99))
+    # Fold creases.
+    put(c, m & (np.abs(xs - w // 2) < 1), PAPER[1]); put(c, m & (xs == w // 2 + 1), PAPER[3])
+    put(c, m & (np.abs(ys - h // 2) < 1), PAPER[1])
+    # A velvet-rope border, like the rope at a club door.
+    rope = m & ~(np.roll(m, 10, 0) & np.roll(m, -10, 0) & np.roll(m, 10, 1) & np.roll(m, -10, 1))
+    rope &= ~(np.roll(m, 6, 0) & np.roll(m, -6, 0) & np.roll(m, 6, 1) & np.roll(m, -6, 1)) == False
+    inner = m & ~(np.roll(m, 12, 0) & np.roll(m, -12, 0) & np.roll(m, 12, 1) & np.roll(m, -12, 1))
+    band = inner & (np.roll(m, 7, 0) & np.roll(m, -7, 0) & np.roll(m, 7, 1) & np.roll(m, -7, 1))
+    put(c, band, VELVET[1]); put(c, band & ((xs + ys) % 6 < 2), VELVET[2]); put(c, band & ((xs + ys) % 6 == 5), VELVET[0])
+    for x, y in ((14, 14), (w - 16, 14), (14, h - 16), (w - 16, h - 16)):  # brass posts in the corners
+        post = c.ellipse_mask(x, y, 5, 5)
+        c.shade(post, x, y, 5, 5, GOLD[1:4]); outline_of(c, post)
+    # Wax seal with a crown, bottom right.
+    sx, sy = w - 52, h - 50
+    seal = c.ellipse_mask(sx, sy, 17, 16)
+    c.shade(seal, sx, sy, 17, 16, VELVET, cuts=(-0.2, 0.4)); outline_of(c, seal)
+    for i in range(-1, 2):
+        tx, ty = sx + i * 7, sy - 9 + (3 if i else 0)
+        for y in range(ty, sy + 2):
+            hw = int((y - ty) * 0.4) + 1
+            c.rect(tx - hw, y, hw * 2, 1, GOLD[2])
+    c.rect(sx - 10, sy + 2, 21, 4, GOLD[1])
+    outline_of(c, m)
+    return c
+
+
+LETTER_TEXT_BOX = (30, 28, 330, 190)       # x, y, w, h on letter.png where the game writes the note
+
+
+def dialog_frame():
+    """9-slice frame for speech and dialog boxes: 24 x 24, corners 8 px. Dark fill, gold rim, cut corners."""
+    c = Canvas(24, 24)
+    c.rect(1, 1, 22, 22, UI_FILL)
+    frame(c, 2, 2, 20, 20, GILT[2], t=2)
+    c.rect(2, 2, 20, 1, GILT[3]); c.rect(2, 2, 1, 20, GILT[3])
+    c.rect(2, 21, 20, 1, GILT[1]); c.rect(21, 2, 1, 20, GILT[1])
+    frame(c, 0, 0, 24, 24, OUTLINE)
+    for x, y in ((0, 0), (23, 0), (0, 23), (23, 23)):
+        c.a[y, x, 3] = 0
+    return c
+
+
+def bubble_tail():
+    """The little tail under a speech bubble, pointing down at the speaker. Overlaps the frame's bottom edge by 3 px."""
+    c = Canvas(16, 12)
+    for y in range(12):
+        x0, x1 = 2 + y // 2, 14 - y
+        if x1 - x0 < 1:
+            c.rect(x0 - 1, y, 2, 1, OUTLINE)
+            break
+        c.rect(x0, y, x1 - x0, 1, UI_FILL)
+        if y >= 3:
+            c.rect(x0, y, 2, 1, GILT[2]); c.rect(x1 - 2, y, 2, 1, GILT[1])
+            c.px(x0 - 1, y, OUTLINE); c.px(x1, y, OUTLINE)
+    return c
+
+
+def next_arrow(frame):
+    c = Canvas(10, 9)
+    dy = frame
+    for i in range(5):
+        c.rect(1 + i, 1 + i + dy, 8 - 2 * i, 1, GILT[3] if i < 2 else GILT[2])
+    c.outline()
+    return c
+
+
+def skip_button():
+    """A small 'SKIP' pill with a play arrow, for the top-right corner."""
+    c = Canvas(52, 18)
+    ys, xs = np.mgrid[0:18, 0:52]
+    m = (((xs - 8) ** 2 / 64 + (ys - 9) ** 2 / 64 <= 1) | ((xs - 43) ** 2 / 64 + (ys - 9) ** 2 / 64 <= 1) | ((xs >= 8) & (xs <= 43) & (ys >= 1) & (ys <= 16)))
+    put(c, m, UI_FILL)
+    rim = m & ~(np.roll(m, 1, 0) & np.roll(m, -1, 0) & np.roll(m, 1, 1) & np.roll(m, -1, 1))
+    put(c, rim, GILT[2])
+    x = 8
+    for ch in 'SKIP':
+        g = SKIP_GLYPHS[ch]
+        for gy, row in enumerate(g):
+            for gx, v in enumerate(row):
+                if v == '#':
+                    c.px(x + gx, 7 + gy, '#fdfefd')
+        x += len(g[0]) + 1
+    for i in range(5):                                       # play arrow
+        c.rect(x + 3, 7 + i, 1 + (2 - abs(i - 2)), 1, GILT[3])
+    outline_of(c, m)
+    return c
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/intro/art'
     os.makedirs(out, exist_ok=True)
@@ -435,6 +563,13 @@ def main():
     door(True).save(os.path.join(out, 'door-open.png'))
     outside().save(os.path.join(out, 'outside.png'))
     door(True, from_outside=True).save(os.path.join(out, 'villa-door-open.png'))
+    note_ground().save(os.path.join(out, 'note.png'))
+    letter().save(os.path.join(out, 'letter.png'))
+    dialog_frame().save(os.path.join(out, 'dialog-frame.png'))
+    bubble_tail().save(os.path.join(out, 'bubble-tail.png'))
+    for f in range(2):
+        next_arrow(f).save(os.path.join(out, f'next-arrow-{f}.png'))
+    skip_button().save(os.path.join(out, 'skip-button.png'))
     print('saved to', out)
 
 
