@@ -19,7 +19,7 @@ Current state: **Milestone 1, core movement**, with a first style pass after the
 
 Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), R to restart.
 
-On a phone or tablet the game fills the screen and NES-style controls float, half see-through, over the brick floor: a left/right rocker on the left and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
+On a phone or tablet the game fills the screen and NES-style controls float, half see-through, over the brick floor: left and right keys on the left and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
 
 Test level items:
 

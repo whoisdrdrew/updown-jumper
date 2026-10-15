@@ -1,4 +1,4 @@
-// On-screen controls for phones and tablets, NES style: a left/right rocker on the left, B (shoot, hold to run)
+// On-screen controls for phones and tablets, NES style: left and right keys on the left, B (shoot, hold to run)
 // and A (jump) on the right, see-through on top of the brick floor of a full-screen game. Computers with a mouse never see them. Phones play sideways only.
 //
 // The buttons only set flags in `touch`; Controls.js reads them next to the keyboard, so the
@@ -29,37 +29,39 @@ const CSS = `
   /* Full screen game; the controls float over the brick floor at the bottom, half see-through. */
   body.touch-mode { padding: 0 !important; overflow: hidden; height: 100dvh; }
   body.touch-mode #game { position: fixed; inset: 0; }
-  #touch { position: fixed; left: 0; right: 0; bottom: 0; height: min(130px, 32vh); z-index: 5; pointer-events: none;
+  #touch { position: fixed; left: 0; right: 0; bottom: 0; height: min(150px, 36vh); z-index: 5; pointer-events: none;
     display: flex; align-items: flex-end; justify-content: space-between; opacity: 0.55;
     padding: 0 max(14px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
     box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
   #touch .pad, #touch .btn { pointer-events: auto; }
   /* NES look, after Sandro's reference: black cross in a grey frame, red B and A on a grey pill. */
-  #touch .pad { position: relative; height: 52%; aspect-ratio: 2.2; margin-bottom: 4%; }
-  #touch .pad .frame { position: absolute; inset: 0; background: #8e8790; border: 2px solid #150b22; border-radius: 12px; }
-  #touch .pad .arm { position: absolute; inset: 9%; background: #221533; border-radius: 8px;
+  /* Left and right are two separate keys with a gap between them, so a thumb can't hit the wrong one. */
+  #touch .pad { position: relative; height: 62%; aspect-ratio: 2.5; margin-bottom: 2%; }
+  #touch .key { position: absolute; top: 0; bottom: 0; width: 42%; background: #8e8790; border: 2px solid #150b22;
+    border-radius: 12px; box-sizing: border-box; }
+  #touch .key.left { left: 0; }
+  #touch .key.right { right: 0; }
+  #touch .key::before { content: ''; position: absolute; inset: 9%; background: #221533; border-radius: 8px;
     box-shadow: inset 0 3px 0 #30233f, inset 0 -3px 0 #0e0413; }
-  #touch .pad .hub { position: absolute; left: 50%; top: 50%; width: 14%; aspect-ratio: 1; transform: translate(-50%, -50%);
-    border-radius: 50%; background: #0e0413; }
-  #touch .pad .arrow { position: absolute; top: 50%; width: 0; height: 0; border: 11px solid transparent; transform: translateY(-50%); }
-  #touch .pad .a-left { left: 14%; border-right: 15px solid #0e0413; border-left: 0; }
-  #touch .pad .a-right { right: 14%; border-left: 15px solid #0e0413; border-right: 0; }
-  #touch .pad .a-left.on { border-right-color: #ffe680; }
-  #touch .pad .a-right.on { border-left-color: #ffe680; }
-  #touch .buttons { position: relative; height: 92%; aspect-ratio: 1.6; }
-  #touch .pill { position: absolute; left: 4%; right: 4%; top: 26%; height: 52%; background: #a396a6;
-    border: 2px solid #150b22; border-radius: 999px; transform: rotate(-22deg); }
-  #touch .btn { position: absolute; width: 34%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #150b22;
-    background: radial-gradient(circle at 38% 32%, #ff6b6b 0 18%, #d42a2a 45%, #8f1414 100%);
-    box-shadow: 0 3px 0 #150b22; }
-  #touch .btn.shoot { left: 9%; top: 41%; }
-  #touch .btn.jump { right: 9%; top: 9%; }
+  #touch .key .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border: 14px solid transparent; }
+  #touch .key.left .arrow { transform: translate(-65%, -50%); border-right: 19px solid #0e0413; border-left: 0; }
+  #touch .key.right .arrow { transform: translate(-35%, -50%); border-left: 19px solid #0e0413; border-right: 0; }
+  #touch .key.left.on .arrow { border-right-color: #ffe680; }
+  #touch .key.right.on .arrow { border-left-color: #ffe680; }
+  #touch .key.on::before { background: #30233f; }
+  /* B and A: red buttons on a grey pill, the letter and its job written inside each button. */
+  #touch .buttons { position: relative; height: 100%; aspect-ratio: 1.75; }
+  #touch .pill { position: absolute; left: 3%; right: 3%; top: 16%; height: 66%; background: #a396a6;
+    border: 2px solid #150b22; border-radius: 999px; transform: rotate(-20deg); }
+  #touch .btn { position: absolute; width: 38%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #150b22;
+    background: radial-gradient(circle at 38% 30%, #ff6b6b 0 16%, #d42a2a 48%, #8f1414 100%);
+    box-shadow: 0 3px 0 #150b22; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font: 14px "Press Start 2P", monospace; color: #fff; text-shadow: 1px 1px 0 #150b22; }
+  #touch .btn small { font-size: 6px; letter-spacing: 0; }
+  #touch .btn.shoot { left: 5%; top: 32%; }
+  #touch .btn.jump { right: 5%; top: 0; }
   #touch .btn.on { transform: translateY(2px); box-shadow: 0 1px 0 #150b22; filter: brightness(1.15); }
-  #touch .label { position: absolute; font: 10px "Press Start 2P", monospace; color: #fff; text-shadow: 1px 1px 0 #150b22;
-    white-space: nowrap; pointer-events: none; text-align: center; transform: translateX(-50%); }
-  #touch .label small { display: block; font-size: 6px; color: #c9ccd3; margin-top: 3px; }
-  #touch .label.b { left: 26%; top: 80%; }
-  #touch .label.a { left: 74%; top: 48%; }
   #rotate { display: none; position: fixed; inset: 0; z-index: 20; background: #12081c; color: #ffe680;
     font: 12px/2 "Press Start 2P", monospace; text-align: center; align-items: center; justify-content: center; padding: 24px; }
   @media (orientation: portrait) {
@@ -80,15 +82,13 @@ export function setupTouchControls(getGame) {
   bar.id = 'touch';
   bar.innerHTML = `
     <div class="pad" aria-label="Move">
-      <div class="frame"></div><div class="arm"></div><div class="hub"></div>
-      <div class="arrow a-left"></div><div class="arrow a-right"></div>
+      <div class="key left"><div class="arrow"></div></div>
+      <div class="key right"><div class="arrow"></div></div>
     </div>
     <div class="buttons">
       <div class="pill"></div>
-      <div class="btn shoot" aria-label="Shoot"></div>
-      <div class="btn jump" aria-label="Jump"></div>
-      <div class="label b">B<small>SHOOT</small></div>
-      <div class="label a">A<small>JUMP</small></div>
+      <div class="btn shoot" aria-label="Shoot">B<small>SHOOT</small></div>
+      <div class="btn jump" aria-label="Jump">A<small>JUMP</small></div>
     </div>`;
   const game = document.getElementById('game');
   game.after(bar);
@@ -140,22 +140,23 @@ function releaseAll() {
   document.querySelectorAll('#touch .on').forEach((el) => el.classList.remove('on'));
 }
 
-// Left/right rocker: the thumb can roll from one side to the other without lifting.
+// Left and right keys: the thumb can still roll from one to the other without lifting.
 function setupPad(pad) {
-  const arrows = { left: pad.querySelector('.a-left'), right: pad.querySelector('.a-right') };
+  const keys = { left: pad.querySelector('.key.left'), right: pad.querySelector('.key.right') };
   let activeId = null;
 
   const set = (dirs) => {
-    for (const k of Object.keys(arrows)) {
+    for (const k of Object.keys(keys)) {
       touch[k] = Boolean(dirs[k]);
-      arrows[k].classList.toggle('on', touch[k]);
+      keys[k].classList.toggle('on', touch[k]);
     }
   };
 
   const fromPoint = (e) => {
     const r = pad.getBoundingClientRect();
+    // The middle (the gap between the keys) presses neither.
     const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    return { left: dx < -0.12, right: dx > 0.12 };
+    return { left: dx < -0.16, right: dx > 0.16 };
   };
 
   pad.addEventListener('pointerdown', (e) => {
