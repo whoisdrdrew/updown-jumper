@@ -6,8 +6,8 @@ outline, 3-step ramps lit from the top left; backdrops a little calmer than the 
 
 Outputs (default /mnt/project-files/art/bonus, or the folder given as the first argument):
   vip-door.png / vip-door-open.png    52 x 84, the door with its pink VIP sign, stands on a step
-  button-music.png / -pressed.png     32 x 48 pedestal with a big dome button, note icon, MUSIC
-  button-timer.png / -pressed.png     32 x 48, clock icon, TIMER
+  button-music.png / -pressed.png     32 x 36 pedestal with a big dome button and MUSIC label; jump on it
+  button-timer.png / -pressed.png     32 x 36, TIMER
   popup-timer.png                     232 x 88 panel; the game writes the question in TEXT box
   lounge.png                          640 x 360 wall, tiles left to right
   trampoline-0.png / trampoline-1.png 32 x 32 floor tile, resting and squashed (tiles left to right)
@@ -118,33 +118,28 @@ def clock_icon(c, x, y, ring, face, hand):
 
 
 def button(kind, pressed):
-    """A gold pedestal with a big dome button on top and an icon and label on its front plate."""
-    w, h = 32, 48
+    """A short gold pedestal with a big dome button on top and its label on the front. Boris jumps on the dome
+    to press it, like a P-switch; the pressed frame has the dome pushed in and lit."""
+    w, h = 32, 36
     c = Canvas(w, h)
     ramp = TEAL if kind == 'music' else RED
     top = 14
-    # Pedestal: a column with a wider foot and cap.
+    # Pedestal: cap, a short column with the label, and a wider foot.
     box(c, 5, top + 4, 22, 3, GILT)
     box(c, 7, top + 8, 18, h - top - 14, PURPLE[1:])
     box(c, 4, h - 5, 24, 4, GILT)
-    # Front plate with icon and label.
-    c.rect(9, top + 10, 14, 14, UI_FILL); frame(c, 9, top + 10, 14, 14, GILT[1])
-    if kind == 'music':
-        note_icon(c, 11, top + 12, ramp[3] if pressed else ramp[2])
-    else:
-        clock_icon(c, 10, top + 11, ramp[2], WHITE if pressed else STEEL[3], OUTLINE)
     label = 'MUSIC' if kind == 'music' else 'TIMER'
-    c.rect(6, top + 26, 20, 7, UI_FILL)
-    text(c, label, 7, top + 27, GILT[3] if pressed else GILT[2])
+    c.rect(6, top + 9, 20, 7, UI_FILL)
+    text(c, label, 7, top + 10, GILT[3] if pressed else GILT[2])
     # Dome: up, or pushed down and lit.
     ys, xs = np.mgrid[0:h, 0:w]
-    dy = 4 if pressed else 0
+    dy = 6 if pressed else 0
     dome = c.ellipse_mask(16, top + 4, 11, 12 - dy) & (ys < top + 4)
     c.shade(dome, 12, top - 4 + dy, 11, 10, ramp[1:] + [WHITE] if pressed else ramp, cuts=(-0.6, -0.1, 0.5))
     outline_of(c, dome)
     c.rect(5, top + 3, 22, 1, OUTLINE)
     if pressed:  # light rays round the lit dome
-        for x, y in ((2, top - 2), (29, top - 2), (16, top - 11), (6, top - 8), (26, top - 8)):
+        for x, y in ((2, top - 1), (29, top - 1), (16, top - 7), (6, top - 5), (26, top - 5)):
             c.px(x, y, ramp[3])
     c.outline()
     return c
