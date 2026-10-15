@@ -321,6 +321,99 @@ def bed():
     return back, front
 
 
+# ---------- outside: in front of Boris's villa by the sea ----------
+
+GRASS = ['#123a20', '#1e5a2e', '#2e7a3e', '#3cae4a', '#8ad860']
+SEA = ['#1a4ea2', '#2a6ad0', '#3a86e8', '#a4d4ff']
+HILL = ['#4a2a4a', '#6a3a5a', '#8a4a62']
+VILLA_DOOR_X = 40                     # the villa door Boris comes out of (door-open.png fits here too)
+
+
+def palm(c, x, top, lean=4):
+    for y in range(top, FLOOR_Y):
+        dx = round(np.sin((y - top) / 30) * lean)
+        seg = (y - top) % 8
+        col = '#3a2418' if seg in (0, 7) else ('#7a5030' if seg < 4 else '#5a3a24')
+        c.rect(x + dx, y, 8, 1, col)
+        c.px(x + dx, y, '#a8723a'); c.px(x + dx - 1, y, OUTLINE); c.px(x + dx + 8, y, OUTLINE)
+    for ang in (-160, -125, -80, -40, 5, -100):
+        a = np.radians(ang)
+        for i in range(40):
+            t = i / 40
+            lx, ly = x + 4 + np.cos(a) * i, top + np.sin(a) * i + (t ** 2) * 26
+            w = max(1, int(5 * (1 - t)))
+            for k in range(-w, w + 1):
+                c.px(int(lx), int(ly + k), GRASS[3] if k < 0 else (GRASS[2] if k < w else GRASS[1]))
+    c.fill(c.ellipse_mask(x + 5, top + 2, 6, 5), '#5a3a24')
+
+
+def outside():
+    c = Canvas(W, H)
+    ys, xs = np.mgrid[0:H, 0:W]
+    dither_bands(c, ['#6a8ad0', '#8aa6dc', '#b0c4e6', '#f6c8a8', '#ffd8a0', '#fae8bf'], top=0, height=210)
+    sun = c.ellipse_mask(470, 178, 26, 26)
+    c.shade(sun, 470, 178, 26, 26, ['#ffb85a', '#ffd27a', '#fff4cc'], light=(0, -1), cuts=(-0.1, 0.45))
+    for cx, cy, w in [(150, 60, 70), (360, 40, 50), (560, 90, 60)]:
+        m = c.ellipse_mask(cx, cy, w / 2, 7) | c.ellipse_mask(cx - w / 6, cy - 6, w / 4, 7)
+        c.shade(m, cx, cy, w / 2, 10, ['#cfd8ec', '#fdf8ee', '#fdfefd'], light=(0, -1), cuts=(-0.1, 0.5))
+    # Hills and the sea on the horizon.
+    hills = ys > 196 - 18 * np.sin(xs / 90.0) ** 2 - 10 * np.sin(xs / 37.0 + 1) ** 2
+    hills &= ys < 210
+    put(c, hills, HILL[1]); put(c, hills & (ys < 200 - 18 * np.sin(xs / 90.0) ** 2), HILL[2])
+    sea = (ys >= 206) & (ys < 236)
+    shade_mask(c, sea, SEA[2::-1][::-1], np.clip((ys - 206) / 30, 0, 0.99))
+    put(c, sea & (((xs + (ys - 206) * 7) % 23) < 3) & ((ys % 4) == 1), SEA[3])
+    put(c, (ys >= 206) & (ys < 236) & (np.abs(xs - 470) < 30 - (ys - 206)) & ((xs + ys) % 3 == 0), '#ffd27a')   # sun glitter
+    # Lawn up to the floor line, ground below.
+    lawn = (ys >= 236) & (ys < FLOOR_Y)
+    shade_mask(c, lawn, GRASS[3:0:-1], np.clip((ys - 236) / 64, 0, 0.99))
+    rnd = np.random.RandomState(5)
+    for _ in range(140):
+        x, y = rnd.randint(0, W), rnd.randint(240, FLOOR_Y - 2)
+        c.px(x, y, GRASS[4]); c.px(x, y + 1, GRASS[3])
+    # White fence along the garden.
+    for x in range(150, W, 18):
+        box(c, x, 248, 8, 50, WHITE)
+        for k in range(4):
+            c.px(x + k, 247 - k + (0 if k < 4 else 0), WHITE[2]); c.px(x + 7 - k, 247 - k, WHITE[1])
+    for y in (258, 282):
+        box(c, 150, y, W - 150, 5, WHITE)
+    # Ground: grass edge with soil and a stone path to the door.
+    c.rect(0, FLOOR_Y, W, H - FLOOR_Y, '#5a3a24')
+    shade_mask(c, ys >= FLOOR_Y, ['#7a5030', '#5a3a24', '#3a2418'], np.clip((ys - FLOOR_Y) / 60, 0, 0.99))
+    c.rect(0, FLOOR_Y, W, 6, GRASS[3]); c.rect(0, FLOOR_Y, W, 2, GRASS[4])
+    for x in range(0, W, 5):
+        c.px(x, FLOOR_Y + 6 + (x * 7) % 3, GRASS[2])
+    c.rect(0, FLOOR_Y - 1, W, 1, OUTLINE)
+    for i, x in enumerate(range(0, W, 46)):
+        st = c.ellipse_mask(x + 20, FLOOR_Y + 20 + (i % 2) * 8, 16, 6)
+        c.shade(st, x + 20, FLOOR_Y + 20 + (i % 2) * 8, 16, 6, ['#8a6a50', '#b08a64', '#d0aa7c'], cuts=(-0.2, 0.45))
+        outline_of(c, st)
+    # Palms behind the fence.
+    palm(c, 300, 150, 5)
+    palm(c, 560, 120, -4)
+    # The villa on the left: cream wall, gold trim, a lamp and a potted plant.
+    vw = 140
+    c.rect(0, 70, vw, FLOOR_Y - 70, CREAM[3])
+    put(c, (ys >= 70) & (ys < FLOOR_Y) & (xs < vw) & ((xs // 20 + ys // 10) % 2 == 0) & (ys % 10 == 0), CREAM[2])   # stone courses
+    c.rect(0, 62, vw + 10, 10, CREAM[4]); c.rect(0, 70, vw + 10, 2, GILT[2]); c.rect(0, 72, vw + 10, 2, CREAM[1])
+    c.rect(vw, 72, 4, FLOOR_Y - 72, CREAM[1]); c.rect(vw + 4, 62, 1, FLOOR_Y - 62, OUTLINE)
+    c.rect(0, 61, vw + 11, 1, OUTLINE)
+    box(c, VILLA_DOOR_X - 8, DOOR_Y - 16, 88, 8, CREAM[1:])
+    box(c, VILLA_DOOR_X - 8, DOOR_Y - 8, 8, FLOOR_Y - DOOR_Y + 8, CREAM[1:])
+    box(c, VILLA_DOOR_X + 64, DOOR_Y - 8, 8, FLOOR_Y - DOOR_Y + 8, CREAM[1:])
+    c.rect(VILLA_DOOR_X, DOOR_Y, 64, FLOOR_Y - DOOR_Y, '#221533')
+    # Wall lantern next to the door.
+    box(c, 118, 150, 10, 16, GILT)
+    c.rect(120, 153, 6, 10, WARM)
+    # Potted olive tree by the wall.
+    box(c, 112, FLOOR_Y - 22, 22, 22, ['#8a3e1a', '#b8642a', '#e08a50'])
+    bush = c.ellipse_mask(123, FLOOR_Y - 40, 16, 14)
+    c.shade(bush, 123, FLOOR_Y - 40, 16, 14, GRASS[1:4], cuts=(-0.2, 0.4))
+    outline_of(c, bush)
+    return c
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/intro/art'
     os.makedirs(out, exist_ok=True)
@@ -330,6 +423,7 @@ def main():
     front.save(os.path.join(out, 'bed-front.png'))
     door(False).save(os.path.join(out, 'door-closed.png'))
     door(True).save(os.path.join(out, 'door-open.png'))
+    outside().save(os.path.join(out, 'outside.png'))
     print('saved to', out)
 
 
