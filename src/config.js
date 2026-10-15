@@ -51,6 +51,7 @@ export const SHOT = {
 };
 
 export const MANGO = {
+  rollSpeed: 32, // they roll along the floor this fast, Goomba pace
   slipSpeed: 170, // the player shoots forward when slipping...
   slipHop: 140, // ...with a small hop
   slipLockMs: 350, // and can't steer for a moment

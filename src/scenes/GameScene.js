@@ -74,6 +74,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.update(time, delta);
     this.shots.update();
     this.rideDucks.update();
+    this.mangos.update();
     if (this.boss?.active) this.boss.update(time);
     if (this.player.y > this.worldH + 32) this.respawn();
   }
@@ -83,7 +84,7 @@ export default class GameScene extends Phaser.Scene {
     const player = this.player;
     this.shots = new RubberDucks(this, layer);
     player.shots = this.shots;
-    this.mangos = new Mangos(this, mangoPositions);
+    this.mangos = new Mangos(this, mangoPositions, layer);
     this.rideDucks = new RideDucks(this, layer, eggPositions);
 
     this.physics.add.overlap(player, this.mangos.group, (_p, mango) => {
