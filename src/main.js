@@ -26,6 +26,7 @@ function startGame() {
 
   // Handy for debugging from the browser console.
   window.__game = game;
+  window.__touch = touch;
 }
 
 // Phones get on-screen controls over the game; set up before the game starts so it is sized to
