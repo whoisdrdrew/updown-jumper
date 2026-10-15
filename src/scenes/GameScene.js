@@ -9,10 +9,12 @@ import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import Boss from '../objects/Boss.js';
-import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS } from '../config.js';
+import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
 import { createBackground, preloadBackground } from '../art/background.js';
+import { preloadBonus, BONUS_SCALE } from '../art/bonus.js';
+import { touch } from '../touch/TouchControls.js';
 
 const FONT = '"Press Start 2P", monospace';
 import testLevel from '../levels/testLevel.js';
@@ -27,6 +29,7 @@ export default class GameScene extends Phaser.Scene {
     preloadSprites(this);
     preloadTiles(this);
     preloadBackground(this);
+    preloadBonus(this);
   }
 
   create() {
@@ -35,7 +38,7 @@ export default class GameScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createSprites(this);
-    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt, vipDoor } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -56,6 +59,9 @@ export default class GameScene extends Phaser.Scene {
     if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
 
     this.addGoal(goal);
+    if (vipDoor) this.vipDoor = this.add.image(vipDoor.x, vipDoor.y, 'vip-door').setOrigin(0.5, 1).setScale(BONUS_SCALE).setDepth(1);
+    this.bonusPlayed = false;
+    this.inBonus = false;
 
     cam.setBounds(0, 0, worldW, worldH);
     cam.startFollow(this.player, true, 0.2, 0.2);
@@ -72,8 +78,9 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     this.updateBackground(time);
-    if (this.finished) return;
+    if (this.finished || this.inBonus) return;
     this.player.update(time, delta);
+    if (this.controls.downJustPressed() && this.atVipDoor()) this.enterBonus();
     this.shots.update();
     this.rideDucks.update();
     this.burgers.update();
@@ -211,6 +218,7 @@ export default class GameScene extends Phaser.Scene {
     const pickups = [];
     let suitcase = null;
     let bossAt = null;
+    let vipDoor = null;
     const blockContents = new Map();
 
     const data = rows.map((row, y) =>
@@ -221,6 +229,7 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
         if (ch === 'S') suitcase = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
         if (ch === 'K') bossAt = { x: x * TILE + TILE / 2, y: y * TILE };
+        if (ch === 'V') vipDoor = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
         if (ch === 'E') eggs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
@@ -252,7 +261,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.children.remove(layer); // re-added after the background so it draws on top
     this.children.remove(view);
-    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt };
+    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt, vipDoor };
   }
 
   addGoal(goal) {
@@ -332,6 +341,46 @@ export default class GameScene extends Phaser.Scene {
     this.bossHud.forEach((o) => o.destroy());
     const text = this.banner('YOU WIN!');
     this.time.delayedCall(1800, () => text.destroy());
+  }
+
+  // Standing on the VIP door's platform, right in front of it.
+  atVipDoor() {
+    const { player, vipDoor } = this;
+    return vipDoor && !player.dead && player.body.blocked.down && Math.abs(player.x - vipDoor.x) <= BONUS.doorReach
+      && Math.abs(player.body.bottom - vipDoor.y) < 4;
+  }
+
+  // Through the VIP door into the duck bonus room (BonusScene). This scene sleeps meanwhile, so
+  // the level, its clock and everything in it wait exactly as they were.
+  enterBonus() {
+    const { player } = this;
+    this.inBonus = true;
+    player.body.setVelocity(0, 0);
+    this.vipDoor.setTexture('vip-door-open');
+    this.tweens.add({ targets: player, alpha: 0, duration: 200 });
+    const cam = this.cameras.main;
+    cam.fadeOut(250);
+    cam.once('camerafadeoutcomplete', () => {
+      this.events.once('wake', (_sys, result) => this.leaveBonus(result));
+      this.scene.launch('bonus', { big: player.big, masked: player.masked, played: this.bonusPlayed });
+      this.scene.sleep();
+    });
+  }
+
+  // Back out of the door with the ducks collected in there (each one is a shot).
+  leaveBonus({ ducks = 0, played = false } = {}) {
+    this.bonusPlayed ||= played;
+    this.cameras.main.fadeIn(250);
+    this.player.setAlpha(1);
+    if (ducks) this.player.addAmmo(ducks);
+    this.time.delayedCall(300, () => this.vipDoor.setTexture('vip-door'));
+    // Forget presses made in the room, so the down that left it doesn't go straight back in.
+    for (const flag of ['jumpQueued', 'shootQueued', 'downQueued']) {
+      this.controls[flag] = false;
+      touch[flag] = false;
+    }
+    this.input.keyboard.resetKeys();
+    this.inBonus = false;
   }
 
   findGroundBelow(x, y) {

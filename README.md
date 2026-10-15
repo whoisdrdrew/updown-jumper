@@ -17,9 +17,9 @@ Current state: **Milestone 1, core movement**, with a first style pass after the
 
   and open the address it prints (usually http://localhost:5173).
 
-Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), R to restart.
+Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), down arrow to go through the VIP door and press the buttons in the bonus room, R to restart.
 
-On a phone or tablet the game fills the screen and NES-style controls float, half see-through, over the brick floor: left and right keys on the left and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
+On a phone or tablet the game fills the screen and NES-style controls float, half see-through, over the brick floor: a cross on the left (left and right keys full size, smaller up and down keys above and below them) and B (shoot, hold to run) and A (jump) on the right. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
 
 **Intro story**: the game starts in Boris's bedroom, like the start of a Mario game. He wakes up and wonders where Ginger is; walk him out of the door on the right. Outside, walk up to the horse and the story plays: the dialog, the note from the Guestlist King, and Boris storming off into level 1. Press up, Space, Enter or tap/click to move the dialog on (a press while text is typing shows it all). The first time it can't be skipped; once you've reached level 1 a SKIP button shows in the top right (or press Esc). That is remembered in the browser. Press S at any time to start the story over.
 
@@ -31,6 +31,7 @@ Test level items:
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
 - **Burger (power-up, like Mario's mushroom)**: some music-note blocks hold a red and yellow burger box. It hops out, slides off the blocks, lands and pops open, and the burger rises out. Eat it and Boris grows big; the next hit (a mango, Solomun) only shrinks him back instead of costing a heart. Level 1 only has burgers.
+- **VIP door and the duck bonus room** (like the coin rooms in Mario 3): the door stands on a platform in the middle of level 1. Stand in front of it and press down. Inside are two buttons: MUSIC (press down to start or stop the boss's beat, a placeholder loop we made, not one of his tracks) and TIMER (press down, then YES on the popup). The 20 second clock starts and the gold gate to the big room opens. Its floor is a trampoline (hold jump to bounce higher); behind the 63 ducks is a big portrait of the end boss, and every duck you grab uncovers a piece of it. When time is up the other ducks vanish and the whole portrait shows. Leave through the door (down again); the ducks you got are added to your shots. The challenge can be played once per try at the level.
 - **Duck egg** (saved for later levels): comes out of a music-note block and hatches by itself (or touch or shoot it) into a big duck. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
 
 ## Project layout
@@ -39,7 +40,7 @@ Test level items:
 |---|---|
 | `src/config.js` | Every movement number (speeds, jump height, gravity). Tune the game feel here. |
 | `src/player/Player.js` | Player movement: acceleration, skidding, variable jump, coyote time, jump buffer. |
-| `src/player/Controls.js` | Keyboard mapping. |
+| `src/player/Controls.js` | Keyboard and touch mapping. |
 | `src/player/RubberDucks.js` | The rubber ducks you shoot. |
 | `src/objects/Mangos.js` | Mangos: the slip hazard. |
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
@@ -51,6 +52,8 @@ Test level items:
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/art/` | Art. The hero, the little duck and the suitcase are cleaned from Sandro's art; the ride duck, tiles, items and backgrounds in `src/art/world/` are drawn by `tools/world_art.py` at the same pixel size (run `python3 tools/world_art.py` to redraw them). |
 | `src/scenes/IntroScene.js` | The intro story: bedroom and outside, the dialog box, speech bubble, letter and skip button. Pictures in `src/art/intro/`. |
+| `src/scenes/BonusScene.js` | The duck bonus room behind the VIP door: buttons, timer popup, trampoline and the portrait reveal. Art in `src/art/bonus/` (drawn by `tools/bonus_art.py`). |
+| `src/audio/BossBeat.js` | The music button's beat, made with Web Audio (no sound files). |
 | `src/progress.js` | What's remembered in the browser (whether the intro has been seen). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 

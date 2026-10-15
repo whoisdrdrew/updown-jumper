@@ -17,13 +17,17 @@ export default class Controls {
     // Remember presses as events, so even a very quick tap between two frames is never lost.
     this.jumpQueued = false;
     this.shootQueued = false;
+    this.downQueued = false;
     this.jumpKey.on('down', () => { this.jumpQueued = true; });
+    this.downKey.on('down', () => { this.downQueued = true; });
     this.actionKey.on('down', () => { this.shootQueued = true; });
   }
 
   left() { return this.leftKey.isDown || touch.left; }
   right() { return this.rightKey.isDown || touch.right; }
-  down() { return this.downKey.isDown; }
+  // Down (keyboard or the cross) goes through doors and presses the bonus room buttons.
+  down() { return this.downKey.isDown || touch.down; }
+  downJustPressed() { return this.consume('downQueued') | consumeTouch('downQueued'); }
   // The up arrow and the A button jump.
   jump() { return this.jumpKey.isDown || touch.jump; }
   jumpJustPressed() { return this.consume('jumpQueued') | consumeTouch('jumpQueued'); }

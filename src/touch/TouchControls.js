@@ -1,4 +1,4 @@
-// On-screen controls for phones and tablets, NES style: left and right keys on the left, B (shoot, hold to run)
+// On-screen controls for phones and tablets, NES style: a cross on the left, B (shoot, hold to run)
 // and A (jump) on the right, see-through on top of the brick floor of a full-screen game. Computers with a mouse never see them. Phones play sideways only.
 //
 // The buttons only set flags in `touch`; Controls.js reads them next to the keyboard, so the
@@ -8,11 +8,14 @@ export const touch = {
   enabled: false,
   left: false,
   right: false,
+  up: false,
+  down: false, // enters doors and presses the buttons in the bonus room
   jump: false,
   action: false,
   // Presses remembered until the game reads them, so a quick tap is never lost.
   jumpQueued: false,
   shootQueued: false,
+  downQueued: false,
 };
 
 // A touch screen with no mouse pointer: phones and tablets, not laptops with a touch screen.
@@ -35,19 +38,30 @@ const CSS = `
     box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
   #touch .pad, #touch .btn { pointer-events: auto; }
   /* NES look, after Sandro's reference: black cross in a grey frame, red B and A on a grey pill. */
-  /* Left and right are two separate keys with a gap between them, so a thumb can't hit the wrong one. */
-  #touch .pad { position: relative; height: 62%; aspect-ratio: 2.5; margin-bottom: 2%; }
-  #touch .key { position: absolute; top: 0; bottom: 0; width: 42%; background: #8e8790; border: 2px solid #150b22;
+  /* The cross: left and right keep their full size (--r tall, 1.04 --r wide) with a gap between
+     them, so a thumb can't hit the wrong one; up and down sit above and below the gap. The cross is
+     taller than the button side, so it reaches a little higher up the screen. */
+  #touch { --r: min(93px, 22.3vh); }
+  #touch .pad { position: relative; width: calc(var(--r) * 3); height: calc(var(--r) * 2.1); flex: none; }
+  #touch .key { position: absolute; background: #8e8790; border: 2px solid #150b22;
     border-radius: 12px; box-sizing: border-box; }
+  #touch .key.left, #touch .key.right { top: calc(var(--r) * 0.55); height: var(--r); width: calc(var(--r) * 1.04); }
   #touch .key.left { left: 0; }
   #touch .key.right { right: 0; }
+  #touch .key.up, #touch .key.down { left: calc(var(--r) * 1.06); width: calc(var(--r) * 0.88); height: calc(var(--r) * 0.62); }
+  #touch .key.up { top: 0; }
+  #touch .key.down { bottom: 0; }
   #touch .key::before { content: ''; position: absolute; inset: 9%; background: #221533; border-radius: 8px;
     box-shadow: inset 0 3px 0 #30233f, inset 0 -3px 0 #0e0413; }
   #touch .key .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border: 14px solid transparent; }
   #touch .key.left .arrow { transform: translate(-65%, -50%); border-right: 19px solid #0e0413; border-left: 0; }
   #touch .key.right .arrow { transform: translate(-35%, -50%); border-left: 19px solid #0e0413; border-right: 0; }
+  #touch .key.up .arrow { transform: translate(-50%, -65%); border-bottom: 15px solid #0e0413; border-top: 0; border-width: 0 12px 15px; }
+  #touch .key.down .arrow { transform: translate(-50%, -35%); border-top: 15px solid #0e0413; border-bottom: 0; border-width: 15px 12px 0; }
   #touch .key.left.on .arrow { border-right-color: #ffe680; }
   #touch .key.right.on .arrow { border-left-color: #ffe680; }
+  #touch .key.up.on .arrow { border-bottom-color: #ffe680; }
+  #touch .key.down.on .arrow { border-top-color: #ffe680; }
   #touch .key.on::before { background: #30233f; }
   /* B and A: red buttons on a grey pill, the letter and its job written inside each button. */
   #touch .buttons { position: relative; height: 100%; aspect-ratio: 1.75; }
@@ -82,8 +96,10 @@ export function setupTouchControls(getGame) {
   bar.id = 'touch';
   bar.innerHTML = `
     <div class="pad" aria-label="Move">
+      <div class="key up"><div class="arrow"></div></div>
       <div class="key left"><div class="arrow"></div></div>
       <div class="key right"><div class="arrow"></div></div>
+      <div class="key down"><div class="arrow"></div></div>
     </div>
     <div class="buttons">
       <div class="pill"></div>
@@ -136,27 +152,34 @@ export function setupTouchControls(getGame) {
 }
 
 function releaseAll() {
-  Object.assign(touch, { left: false, right: false, jump: false, action: false });
+  Object.assign(touch, { left: false, right: false, up: false, down: false, jump: false, action: false });
   document.querySelectorAll('#touch .on').forEach((el) => el.classList.remove('on'));
 }
 
-// Left and right keys: the thumb can still roll from one to the other without lifting.
+// The cross: the thumb can still roll from one key to another without lifting.
 function setupPad(pad) {
-  const keys = { left: pad.querySelector('.key.left'), right: pad.querySelector('.key.right') };
+  const keys = {};
+  for (const k of ['left', 'right', 'up', 'down']) keys[k] = pad.querySelector(`.key.${k}`);
   let activeId = null;
 
   const set = (dirs) => {
     for (const k of Object.keys(keys)) {
-      touch[k] = Boolean(dirs[k]);
-      keys[k].classList.toggle('on', touch[k]);
+      const on = Boolean(dirs[k]);
+      if (k === 'down' && on && !touch.down) touch.downQueued = true;
+      touch[k] = on;
+      keys[k].classList.toggle('on', on);
     }
   };
 
+  // Measured from the centre of the cross, in units of the left/right key height (--r).
   const fromPoint = (e) => {
-    const r = pad.getBoundingClientRect();
-    // The middle (the gap between the keys) presses neither.
-    const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    return { left: dx < -0.16, right: dx > 0.16 };
+    const rect = pad.getBoundingClientRect();
+    const r = rect.height / 2.1;
+    const dx = (e.clientX - (rect.left + rect.width / 2)) / r;
+    const dy = (e.clientY - (rect.top + rect.height / 2)) / r;
+    // In the left/right row: the gap in the middle presses neither. Above or below it: up or down.
+    if (Math.abs(dy) <= 0.5) return { left: dx < -0.44, right: dx > 0.44 };
+    return { up: dy < 0, down: dy > 0, left: dx < -0.6, right: dx > 0.6 };
   };
 
   pad.addEventListener('pointerdown', (e) => {
