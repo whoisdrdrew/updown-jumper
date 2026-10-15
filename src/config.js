@@ -96,7 +96,7 @@ export const BOSS = {
 // The duck bonus room behind the VIP door, like the Mario 3 coin rooms: start the timer, then
 // bounce on the trampoline floor and grab as many ducks as you can before it runs out.
 export const BONUS = {
-  timeLimit: 20, // seconds on the bonus clock
-  bounceSpeed: 460, // the trampoline throws you up this fast; hold jump to go higher (to the top row)
+  timeLimit: 15, // seconds on the bonus clock: a clean run takes about 13.5, so getting all 63 is hard
+  topReach: 6, // each trampoline bounce lifts your head this far into the top row of ducks
   doorReach: 10, // stand this close to a door or button (horizontally) and press down to use it
 };

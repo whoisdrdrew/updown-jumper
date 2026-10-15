@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import Player from '../player/Player.js';
 import Controls from '../player/Controls.js';
 import BossBeat from '../audio/BossBeat.js';
-import { BONUS, GAME_WIDTH, ZOOM } from '../config.js';
+import { BONUS, GAME_WIDTH, PLAYER, ZOOM } from '../config.js';
 import { DUCK_SCALE } from '../art/sprites.js';
 import { preloadBonus, BONUS_SCALE, POPUP_TEXT_BOX, PORTRAIT_INSET } from '../art/bonus.js';
 
@@ -21,7 +21,7 @@ const PORTRAIT = { cols: 9, rows: 7, cell: 16, left: 416 - 72, top: 26 };
 const CELL_COLOR = 0x221533;
 
 // The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
-// Press down at the music button for the boss's beat, at the timer button to start the 20 seconds
+// Press down at the music button for the boss's beat, at the timer button to start the 15 seconds
 // (after a yes/no popup); the gate opens and every duck you grab uncovers a piece of the portrait.
 // When time is up the ducks vanish and the whole portrait shows. Leave through the door (down).
 // Started by GameScene with { big, masked, played }; wakes GameScene with { ducks, played }.
@@ -104,12 +104,24 @@ export default class BonusScene extends Phaser.Scene {
     this.physics.add.existing(this.floor, true);
   }
 
-  // Like a Mario trampoline: landing on it throws you up; hold jump to go higher.
+  // Like a Mario trampoline: landing on it throws you up, every time exactly as high as the top row
+  // of ducks (the jump button makes no difference here), so every duck can be reached.
   bounce() {
     const { player } = this;
-    if (!player.body.blocked.down || player.x < ROOM_LEFT) return;
-    player.body.setVelocityY(-BONUS.bounceSpeed);
-    player.lastGroundedAt = -Infinity; // no ordinary jump straight after, it would be lower
+    const body = player.body;
+    if (player.x < ROOM_LEFT) {
+      body.setMaxVelocityY(PLAYER.maxFallSpeed);
+      return;
+    }
+    body.setMaxVelocityY(1000); // the fall speed limit would also cap the launch
+    if (!body.blocked.down) {
+      body.setGravityY(0); // the same arc up and down, whatever the jump button does
+      return;
+    }
+    const rise = body.top - (PORTRAIT.top + BONUS.topReach);
+    body.setGravityY(0);
+    body.setVelocityY(-Math.sqrt(2 * this.physics.world.gravity.y * rise));
+    player.lastGroundedAt = -Infinity; // no ordinary jump straight after
     const tile = this.trampolines[Math.floor((player.x - ROOM_LEFT) / 16)];
     if (!tile) return;
     tile.setTexture('trampoline-1');
