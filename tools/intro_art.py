@@ -1,0 +1,337 @@
+"""Draws the intro story art: Boris's bedroom (cream and gold, like Sandro's reference), the bed, the door.
+
+Same rules as world_art.py: drawn at the hero's pixel size (twice the world resolution), #150b22
+outline, 3-step ramps lit from the top left; backdrops a little calmer than the sprites.
+
+Outputs (default /mnt/project-files/intro/art, or the folder given as the first argument):
+  bedroom.png       640 x 360 backdrop, one screen. Floor line at y=300 (world y=150).
+  bed-back.png      headboard, mattress and pillows (Boris lies on top of this)
+  bed-front.png     the duvet, throw and footboard (drawn over Boris)
+  door-closed.png / door-open.png   the bedroom door, placed at DOOR_X, DOOR_Y on the backdrop
+
+Run from the repo root:  python3 tools/intro_art.py [out_dir]   (needs Pillow and numpy)
+"""
+import os
+import sys
+import numpy as np
+from pixelkit import Canvas, OUTLINE, rgb
+from world_art import dither_bands, GOLD, BLUE, WHITE
+
+W, H = 640, 360
+FLOOR_Y = 300
+DOOR_X, DOOR_Y = 556, 150          # top-left of the door sprites on the backdrop
+BED_X, BED_Y = 52, 196              # top-left of both bed sprites on the backdrop
+
+CREAM = ['#7a6450', '#a68e72', '#cbb89a', '#e6d8bf', '#f5ecdc']   # shadow .. lit
+GILT = ['#7a4a14', '#b8863a', '#e0b45c', '#f5d890']               # soft gold trim
+MARBLE = ['#8e8a90', '#b4b0b4', '#d4d0d2', '#ecebeb']
+VEIN = '#9a96a6'
+SKY = ['#f6a64a', '#ffd27a', '#fae8bf', '#fdf8ee']
+FLOWER = ['#f6b8c8', '#fdfefd', '#3cae4a']
+WARM = '#fff4cc'
+
+
+def put(c, mask, col):
+    c.a[mask] = rgb(col) + [255]
+
+
+def box(c, x, y, w, h, ramp, outline=True):
+    """A shaded block lit from the top left: highlight on top and left edges, shadow bottom and right."""
+    c.rect(x, y, w, h, ramp[-2] if len(ramp) > 2 else ramp[-1])
+    c.rect(x, y, w, 2, ramp[-1])
+    c.rect(x, y, 2, h, ramp[-1])
+    c.rect(x, y + h - 2, w, 2, ramp[0])
+    c.rect(x + w - 2, y, 2, h, ramp[0])
+    if outline:
+        frame(c, x - 1, y - 1, w + 2, h + 2, OUTLINE)
+
+
+def frame(c, x, y, w, h, col, t=1):
+    c.rect(x, y, w, t, col); c.rect(x, y + h - t, w, t, col)
+    c.rect(x, y, t, h, col); c.rect(x + w - t, y, t, h, col)
+
+
+def outline_of(c, mask):
+    p = np.pad(mask, 1)
+    n = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+    put(c, ~mask & n, OUTLINE)
+
+
+def shade_mask(c, mask, ramp, t):
+    """Fill a mask with a ramp by a 0..1 value t (0 = lit)."""
+    idx = np.clip((t * len(ramp)).astype(int), 0, len(ramp) - 1)
+    for i, col in enumerate(ramp[::-1]):
+        put(c, mask & (idx == i), col)
+
+
+def lamp(c, x, y):
+    """A table lamp: cream pleated shade glowing warm, gold base."""
+    shade = np.zeros((c.h, c.w), bool)
+    for k in range(14):
+        w_ = 7 + k // 2
+        shade[y + k, x - w_:x + w_] = True
+    ys, xs = np.mgrid[0:c.h, 0:c.w]
+    shade_mask(c, shade, [WARM, CREAM[4], CREAM[3]], np.clip((ys - y) / 18 + (xs - x) / 40 + 0.2, 0, 0.99))
+    put(c, shade & ((xs - x) % 4 == 0), CREAM[3])
+    outline_of(c, shade)
+    body = c.ellipse_mask(x, y + 21, 5, 6)
+    c.shade(body, x, y + 21, 5, 6, GILT[1:], cuts=(-0.2, 0.4))
+    outline_of(c, body)
+    box(c, x - 6, y + 27, 12, 3, GILT)
+    # Warm glow on the wall around the shade.
+    glow = (np.hypot(xs - x, (ys - y - 6) * 1.3) < 34) & ~shade & ((xs + ys) % 2 == 0) & (c.a[..., 3] > 0)
+    c.a[glow, :3] = np.clip(c.a[glow, :3].astype(int) + 14, 0, 255).astype(np.uint8)
+
+
+def nightstand(c, x, w=44):
+    top = FLOOR_Y - 46
+    box(c, x, top, w, 38, CREAM)
+    for k in range(2):
+        frame(c, x + 4, top + 6 + k * 15, w - 8, 12, CREAM[1])
+        c.rect(x + w // 2 - 2, top + 11 + k * 15, 4, 2, GILT[2])
+    box(c, x + 2, top - 4, w - 4, 4, GILT)                     # gold top rim
+    for lx in (x + 3, x + w - 6):
+        box(c, lx, FLOOR_Y - 8, 3, 8, GILT, outline=False)
+    lamp(c, x + w // 2, top - 34)
+
+
+def chandelier(c, cx, top=18):
+    """Gold chandelier with candle bulbs and crystal drops, hanging from a ceiling medallion."""
+    med = c.ellipse_mask(cx, top + 2, 26, 6)
+    c.shade(med, cx, top + 2, 26, 6, CREAM[2:], cuts=(-0.1, 0.5))
+    for y in range(top + 4, top + 40):                                       # chain
+        c.px(cx, y, GILT[2] if y % 3 else GILT[0])
+    box(c, cx - 3, top + 40, 6, 22, GILT)                                     # stem
+    ys, xs = np.mgrid[0:c.h, 0:c.w]
+    for side in (-1, 1):
+        for reach, dy in ((34, 0), (20, -10)):
+            arm = (np.abs(ys - (top + 60 + dy - 6 * np.sin(np.clip((xs - cx) * side, 0, reach) / reach * np.pi))) <= 1) \
+                & ((xs - cx) * side >= 0) & ((xs - cx) * side <= reach)
+            put(c, arm, GILT[2])
+            bx = cx + side * reach
+            box(c, bx - 2, top + 50 + dy, 4, 8, CREAM[3:], outline=True)        # candle
+            flame = c.ellipse_mask(bx, top + 46 + dy, 2, 3)
+            put(c, flame, WARM); c.px(bx, top + 45 + dy, '#fdfefd')
+            for k in range(3):                                                  # crystal drops
+                c.px(bx, top + 62 + dy + k, '#fdfefd' if k == 0 else '#cfd8ec')
+            glow = (np.hypot(xs - bx, ys - (top + 46 + dy)) < 16) & ((xs + ys) % 2 == 0)
+            c.a[glow, :3] = np.clip(c.a[glow, :3].astype(int) + 18, 0, 255).astype(np.uint8)
+    bowl = c.ellipse_mask(cx, top + 64, 14, 6) & (ys >= top + 62)
+    c.shade(bowl, cx, top + 64, 14, 6, GILT[1:], cuts=(-0.1, 0.5))
+    outline_of(c, bowl)
+    for k in range(-2, 3):
+        for j in range(4):
+            c.px(cx + k * 5, top + 70 + j + abs(k), '#fdfefd' if j == 0 else '#cfd8ec')
+
+
+def bedroom():
+    c = Canvas(W, H)
+    ys, xs = np.mgrid[0:H, 0:W]
+    # Ceiling with a warm cove light, crown moulding.
+    c.rect(0, 0, W, 18, CREAM[3])
+    c.rect(0, 12, W, 2, WARM)
+    c.rect(0, 14, W, 4, CREAM[2]); c.rect(0, 18, W, 2, GILT[1]); c.rect(0, 20, W, 1, CREAM[1])
+    # Wall: cream with gold-lined panels.
+    c.rect(0, 21, W, FLOOR_Y - 21, CREAM[3])
+    put(c, (ys > 21) & (ys < FLOOR_Y) & ((xs < 24) | (xs > W - 24)) & ((xs + ys) % 2 == 0), CREAM[2])
+    for x0, x1 in ((0, 44), (276, 372), (474, 548), (622, 640)):
+        frame(c, x0 + 6, 40, x1 - x0 - 12, 150, GILT[1])
+        frame(c, x0 + 6, 204, x1 - x0 - 12, FLOOR_Y - 220, GILT[1])
+    c.rect(0, 196, W, 3, CREAM[4]); c.rect(0, 199, W, 1, CREAM[1])      # chair rail
+    # Skirting board.
+    c.rect(0, FLOOR_Y - 12, W, 12, CREAM[4]); c.rect(0, FLOOR_Y - 12, W, 2, '#fdfefd')
+    c.rect(0, FLOOR_Y - 3, W, 3, CREAM[2]); c.rect(0, FLOOR_Y - 13, W, 1, CREAM[1])
+
+    # The arched lattice panel behind the bed, like the reference.
+    ax0, ax1, atop = 44, 270, 36
+    acx, half = (ax0 + ax1) / 2, (ax1 - ax0) / 2
+    arch = (xs >= ax0) & (xs < ax1) & (ys < FLOOR_Y - 12)
+    nx = np.abs(xs - acx) / half
+    arch &= ys >= atop + 34 * (1 - np.sqrt(np.clip(1 - nx ** 2, 0, 1))) - 14 * np.clip(1 - nx * 5, 0, 1)
+    put(c, arch, CREAM[2])
+    lattice = arch & ((((xs - ys) % 12) == 0) | (((xs + ys) % 12) == 0))
+    put(c, lattice, CREAM[3])
+    put(c, arch & (((xs - ys) % 12) == 6) & (((xs + ys) % 12) == 6), GILT[2])
+    inner = arch & ~(np.roll(arch, 6, 0) & np.roll(arch, -6, 1) & np.roll(arch, 6, 1))
+    put(c, inner, GILT[1])
+    outline_of(c, arch)
+
+    # Painting of the mask in a gold frame.
+    px_, py_, pw, ph = 290, 62, 68, 82
+    box(c, px_, py_, pw, ph, GILT)
+    c.rect(px_ + 5, py_ + 5, pw - 10, ph - 10, '#221533')
+    mx, my = px_ + pw // 2, py_ + 46
+    face = c.ellipse_mask(mx, my, 18, 20)
+    c.shade(face, mx, my, 18, 20, WHITE, cuts=(-0.2, 0.4))
+    for i in range(-2, 3):
+        tx, ty = mx + i * 7, my - 34 + (6 if i % 2 else 0)
+        for y in range(ty, my - 14):
+            half_ = int((y - ty) * 0.35) + 1
+            c.rect(tx - half_, y, half_ * 2, 1, GOLD[2] if y < ty + 8 else GOLD[1])
+    c.rect(mx - 13, my - 4, 9, 5, BLUE[1]); c.rect(mx + 4, my - 4, 9, 5, BLUE[1])
+    c.rect(mx - 11, my - 3, 5, 3, OUTLINE); c.rect(mx + 6, my - 3, 5, 3, OUTLINE)
+    c.rect(mx - 5, my - 14, 10, 4, GOLD[2])
+
+    # Chandelier in the middle of the room.
+    chandelier(c, 158)
+
+    # Tall window with sheer curtains and heavy cream drapes.
+    wx, wy, ww, wh = 384, 44, 80, 236
+    sky = Canvas(ww, wh)
+    dither_bands(sky, SKY)
+    c.a[wy:wy + wh, wx:wx + ww] = sky.a
+    for x in range(wx, wx + ww, 6):                                          # sheer folds
+        c.rect(x, wy, 2, wh, '#fdf8ee')
+    for x, y, w_, h_ in [(wx - 4, wy - 4, ww + 8, 4), (wx - 4, wy + wh, ww + 8, 4)]:
+        box(c, x, y, w_, h_, CREAM[2:], outline=False)
+    for side in (0, 1):
+        x0 = wx - 26 if side == 0 else wx + ww - 6
+        for y in range(wy - 10, FLOOR_Y - 4):
+            t = (y - wy) / (FLOOR_Y - wy)
+            w_ = int(30 - 10 * np.sin(np.clip(t, 0, 1) * np.pi * 0.9))
+            xa = x0 if side == 0 else x0 + 30 - w_
+            for k in range(w_):
+                fold = k % 9
+                col = CREAM[4] if fold < 2 else (CREAM[3] if fold < 6 else CREAM[2])
+                c.px(xa + k, y, col)
+            c.px(xa - 1, y, OUTLINE); c.px(xa + w_, y, OUTLINE)
+        c.rect(x0 + (2 if side == 0 else 6), wy + 120, 24, 4, GILT[2])        # tie-back
+    box(c, wx - 34, wy - 16, ww + 68, 5, GILT)                               # curtain rod
+    # Sunlight falling on the floor.
+    beam = (ys >= FLOOR_Y + 2) & (xs >= wx - 20 - (ys - FLOOR_Y) * 0.9) & (xs <= wx + ww - (ys - FLOOR_Y) * 0.9) & ((xs + ys) % 2 == 0)
+
+    # Vanity with a round gold mirror and flowers.
+    vx, vw = 480, 64
+    box(c, vx, FLOOR_Y - 44, vw, 6, CREAM[1:])
+    for lx in (vx + 3, vx + vw - 7):
+        box(c, lx, FLOOR_Y - 38, 4, 38, GILT, outline=False)
+    frame(c, vx + 8, FLOOR_Y - 38, vw - 16, 10, CREAM[1])
+    mir = c.ellipse_mask(vx + vw // 2, FLOOR_Y - 76, 18, 24)
+    put(c, mir, GILT[2]); put(c, c.ellipse_mask(vx + vw // 2, FLOOR_Y - 76, 15, 21), '#cfd8ec')
+    put(c, c.ellipse_mask(vx + vw // 2 - 5, FLOOR_Y - 84, 4, 8), '#fdfefd')
+    outline_of(c, mir)
+    vase = c.ellipse_mask(vx + 12, FLOOR_Y - 50, 4, 6)
+    c.shade(vase, vx + 12, FLOOR_Y - 50, 4, 6, GILT[1:]); outline_of(c, vase)
+    for fx, fy in [(-4, -62), (2, -64), (6, -59), (-1, -57), (-7, -58)]:
+        f = c.ellipse_mask(vx + 12 + fx, FLOOR_Y + fy, 3, 3)
+        put(c, f, FLOWER[0] if fx % 2 else FLOWER[1]); c.px(vx + 12 + fx, FLOOR_Y + fy, GILT[2])
+    c.rect(vx + 9, FLOOR_Y - 58, 1, 4, FLOWER[2]); c.rect(vx + 14, FLOOR_Y - 58, 1, 4, FLOWER[2])
+
+    # Nightstands with lamps either side of the bed.
+    nightstand(c, 4)
+    nightstand(c, 226)
+
+    # Marble floor: big tiles in perspective with soft veins and a reflection band.
+    fl = ys >= FLOOR_Y
+    put(c, fl, MARBLE[2])
+    put(c, fl & (ys < FLOOR_Y + 6), MARBLE[3])
+    for y in (FLOOR_Y + 14, FLOOR_Y + 34):
+        c.rect(0, y, W, 1, MARBLE[1])
+    for k in range(-6, 14):
+        x0 = k * 64
+        line = fl & (np.abs(xs - (x0 + (ys - FLOOR_Y) * (x0 - 320) / 140)) < 0.6)
+        put(c, line, MARBLE[1])
+    put(c, beam, MARBLE[3])
+    rnd = np.random.RandomState(3)
+    for _ in range(26):
+        x, y = rnd.randint(0, W), rnd.randint(FLOOR_Y + 3, H - 2)
+        for k in range(rnd.randint(6, 16)):
+            c.px(x + k, y + int(np.sin(k / 3) * 2), VEIN)
+    # Reflections of the bright window and the gold furniture.
+    c.rect(0, FLOOR_Y, W, 1, CREAM[1])
+    # Ornate rug under the bed.
+    rug = fl & (ys >= FLOOR_Y + 8) & (ys < FLOOR_Y + 40) & (xs > 18 - (ys - FLOOR_Y) * 0.6) & (xs < 300 + (ys - FLOOR_Y) * 0.6)
+    put(c, rug, CREAM[3])
+    border = rug & ~(np.roll(rug, 4, 0) & np.roll(rug, -4, 0) & np.roll(rug, 8, 1) & np.roll(rug, -8, 1))
+    put(c, border, GILT[2])
+    put(c, rug & ~border & (((xs // 2 + ys) % 10) == 0), CREAM[2])
+    put(c, rug & ~border & ((xs - 160) ** 2 / 90 ** 2 + (ys - FLOOR_Y - 24) ** 2 / 9 ** 2 < 1) & ((xs + ys) % 3 == 0), GILT[1])
+    outline_of(c, rug)
+    # Door frame on the right (the door sprites go inside it).
+    box(c, DOOR_X - 8, DOOR_Y - 10, 8, FLOOR_Y - DOOR_Y + 10, CREAM[1:])
+    box(c, DOOR_X + 64, DOOR_Y - 10, 8, FLOOR_Y - DOOR_Y + 10, CREAM[1:])
+    box(c, DOOR_X - 12, DOOR_Y - 16, 88, 8, CREAM[1:])
+    c.rect(DOOR_X - 8, DOOR_Y - 18, 80, 2, GILT[2])
+    c.rect(DOOR_X, DOOR_Y, 64, FLOOR_Y - DOOR_Y, '#221533')
+    return c
+
+
+def door(open_):
+    dh = FLOOR_Y - DOOR_Y
+    c = Canvas(64, dh)
+    if not open_:
+        box(c, 1, 1, 62, dh - 1, CREAM[1:], outline=False)
+        for y0, h_ in ((10, 54), (72, dh - 84)):                         # two raised panels
+            frame(c, 9, y0, 46, h_, GILT[1])
+            frame(c, 10, y0 + 1, 44, h_ - 2, CREAM[4])
+        handle = c.ellipse_mask(9, dh // 2 + 4, 3, 3)
+        c.shade(handle, 9, dh // 2 + 4, 3, 3, GILT[1:])
+        outline_of(c, handle)
+        c.rect(6, dh // 2 + 7, 7, 2, GILT[2])
+        frame(c, 0, 0, 64, dh + 1, OUTLINE)
+    else:
+        # Doorway full of bright morning light, the door swung open against the frame.
+        dither_bands(c, ['#f6a64a', '#ffd27a', '#fae8bf', '#fdfefd'])
+        ys, xs = np.mgrid[0:dh, 0:64]
+        grass = ys > dh - 22
+        put(c, grass, '#3cae4a'); put(c, grass & (ys == dh - 22), '#8ad860')
+        put(c, (ys > dh - 12) & (np.abs(xs - 32) < 10 + (ys - dh + 12)), '#d0aa7c')
+        box(c, 50, 0, 14, dh, CREAM[1:], outline=False)
+        c.rect(49, 0, 1, dh, OUTLINE)
+        c.rect(0, 0, 64, 1, OUTLINE)
+    return c
+
+
+def bed():
+    """Two layers so Boris can lie inside: back (headboard, mattress, pillows) and front (duvet, footboard)."""
+    bw, bh = 160, FLOOR_Y - BED_Y
+    mt = 72                                                          # mattress top
+    back, front = Canvas(bw, bh), Canvas(bw, bh)
+    ys, xs = np.mgrid[0:bh, 0:bw]
+    # Tall tufted headboard with a curved gold top.
+    hb = (xs >= 2) & (xs < 20) & (ys >= mt - 52 + (xs - 11) ** 2 / 14) & (ys < bh - 8)
+    shade_mask(back, hb, CREAM[1:], np.clip((xs - 2) / 18 + 0.1, 0, 0.99))
+    put(back, hb & ((ys + (xs // 6) * 4) % 8 == 0) & ((xs - 2) % 6 == 3), CREAM[0])          # tufts
+    put(back, hb & ~np.roll(hb, 2, 0), GILT[2])
+    outline_of(back, hb)
+    # Bed base with gold trim, mattress, pillows.
+    box(back, 18, mt + 14, bw - 22, 14, CREAM[1:])
+    back.rect(18, mt + 14, bw - 22, 2, GILT[2])
+    box(back, 18, mt, bw - 30, 14, WHITE)
+    for px, py, rx, ry, ramp in ((32, mt - 4, 13, 8, CREAM[2:]), (44, mt - 2, 12, 7, WHITE), (54, mt, 8, 5, GILT[1:])):
+        pil = back.ellipse_mask(px, py, rx, ry)
+        back.shade(pil, px, py, rx, ry, ramp, cuts=(-0.2, 0.45))
+        outline_of(back, pil)
+    for x in (22, bw - 16):
+        box(back, x, mt + 28, 5, bh - mt - 29, GILT)                 # gold legs
+    # Front: a thick cream duvet from the waist down with a gold throw across the foot.
+    wave = np.round(np.sin((xs - 58) / 10.0)).astype(int)
+    duvet = (xs >= 58) & (xs < bw - 12) & (ys >= mt - 8 + wave) & (ys < mt + 16)
+    duvet |= (xs >= 58) & (xs < bw - 8) & (ys >= mt + 8) & (ys < mt + 22)
+    shade_mask(front, duvet, [CREAM[4], CREAM[3], CREAM[2]], np.clip((ys - mt + 8) / 30, 0, 0.99))
+    put(front, duvet & (ys == mt - 2 + wave), '#fdfefd')
+    put(front, duvet & ((xs + ys * 2) % 14 == 0) & (ys > mt), GILT[2])             # damask dots
+    throw = duvet & (xs >= bw - 52) & (xs < bw - 24)
+    shade_mask(front, throw, GILT[1:][::-1], np.clip((ys - mt + 8) / 30, 0, 0.99))
+    put(front, throw & (ys == mt + 21), GILT[0])
+    outline_of(front, duvet)
+    box(front, bw - 12, 26, 10, bh - 35, CREAM[1:])                 # upholstered footboard
+    front.rect(bw - 12, 26, 10, 2, GILT[2])
+    box(front, bw - 10, bh - 9, 5, 9, GILT, outline=False)
+    return back, front
+
+
+def main():
+    out = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/intro/art'
+    os.makedirs(out, exist_ok=True)
+    bedroom().save(os.path.join(out, 'bedroom.png'))
+    back, front = bed()
+    back.save(os.path.join(out, 'bed-back.png'))
+    front.save(os.path.join(out, 'bed-front.png'))
+    door(False).save(os.path.join(out, 'door-closed.png'))
+    door(True).save(os.path.join(out, 'door-open.png'))
+    print('saved to', out)
+
+
+if __name__ == '__main__':
+    main()
