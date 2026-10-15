@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { BOSS, GAME_WIDTH } from '../config.js';
 
 const SCALE = 0.5; // like the hero: one picture pixel is one screen pixel
+const CLOUD_OVERLAP = 5; // picture pixels of his bottom that sink into the steam cloud
+const CLOUD_BELOW = (22 - CLOUD_OVERLAP) * SCALE; // how far the cloud reaches below his picture
 
 // Solomun, the end boss of world 1. He floats cross-legged around the arena, waves his sauna
 // towel as a warning, then dives at the player and glides low over the floor before rising again.
@@ -16,6 +18,14 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.body.setAllowGravity(false);
     this.fitBody();
 
+    // He sits on a cloud of sauna steam: drawn behind him, gently swapping between two frames.
+    this.cloud = scene.add.image(this.x, this.y, 'solomun-cloud-0').setScale(SCALE).setDepth(4);
+    this.cloudTimer = scene.time.addEvent({
+      delay: 280,
+      loop: true,
+      callback: () => this.cloud.setTexture(this.cloud.texture.key === 'solomun-cloud-0' ? 'solomun-cloud-1' : 'solomun-cloud-0'),
+    });
+
     this.arena = arena;
     this.hitsLeft = BOSS.hits;
     this.speedFactor = 1;
@@ -29,9 +39,17 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     return this.arena.floor - BOSS.hoverHeight;
   }
 
-  // Centre height that puts his folded legs just above the floor, low enough for a hopping duck.
+  // Centre height that rests his steam cloud on the floor, low enough for a hopping duck.
   get lowY() {
-    return this.arena.floor - this.displayHeight / 2 + 1;
+    return this.arena.floor - this.displayHeight / 2 - CLOUD_BELOW + 1;
+  }
+
+  // Keep the cloud centred under him, its top tucked behind his folded legs.
+  preUpdate(time, delta) {
+    super.preUpdate(time, delta);
+    if (this.cloud?.active && this.mode !== 'defeated') {
+      this.cloud.setPosition(this.x, this.y + this.displayHeight / 2 + CLOUD_BELOW - this.cloud.displayHeight / 2);
+    }
   }
 
   get hurtable() {
@@ -160,7 +178,18 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.body.enable = false;
     this.setAngle(0).setFlipX(false).setTexture('solomun-defeat');
     this.flash();
-    // He throws in the towel...
+    // The steam cloud puffs away...
+    this.cloudTimer.remove();
+    scene.tweens.add({
+      targets: this.cloud,
+      scale: SCALE * 1.8,
+      alpha: 0,
+      y: this.cloud.y - 6,
+      duration: 500,
+      ease: 'Quad.easeOut',
+      onComplete: () => this.cloud.destroy(),
+    });
+    // ...he throws in the towel...
     const towel = scene.add.image(this.x, this.y - 8, 'solomun-towel').setScale(SCALE).setDepth(5);
     scene.tweens.add({ targets: towel, x: this.x + 40, y: this.y - 50, angle: 540, duration: 700, ease: 'Quad.easeOut' });
     scene.tweens.add({ targets: towel, y: this.arena.floor - 3, delay: 700, duration: 500, ease: 'Bounce.easeOut' });

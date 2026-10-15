@@ -24,6 +24,8 @@ import solomunAttack from './solomun/attack.png';
 import solomunDefeat from './solomun/defeat.png';
 import solomunTowel from './solomun/towel.png';
 import solomunPortrait from './solomun/portrait.png';
+import solomunCloud0 from './solomun/cloud-0.png';
+import solomunCloud1 from './solomun/cloud-1.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
@@ -62,6 +64,8 @@ export function preloadSprites(scene) {
   scene.load.image('solomun-defeat', solomunDefeat);
   scene.load.image('solomun-towel', solomunTowel);
   scene.load.image('solomun-portrait', solomunPortrait);
+  scene.load.image('solomun-cloud-0', solomunCloud0); // the sauna-steam cloud he sits on, two bob frames
+  scene.load.image('solomun-cloud-1', solomunCloud1);
 }
 
 // Everything is drawn at twice the world resolution and shown at half size.
