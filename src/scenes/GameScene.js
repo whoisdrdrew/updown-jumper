@@ -5,6 +5,7 @@ import Controls from '../player/Controls.js';
 import RubberDucks from '../player/RubberDucks.js';
 import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
+import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import Boss from '../objects/Boss.js';
@@ -75,6 +76,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.update(time, delta);
     this.shots.update();
     this.rideDucks.update();
+    this.burgers.update();
     this.mangos.update();
     if (this.boss?.active) this.boss.update(time);
     if (this.player.y > this.worldH + 32) this.respawn();
@@ -87,6 +89,17 @@ export default class GameScene extends Phaser.Scene {
     player.shots = this.shots;
     this.mangos = new Mangos(this, mangoPositions, layer);
     this.rideDucks = new RideDucks(this, layer, eggPositions);
+    this.burgers = new Burgers(this, layer);
+
+    // The burger power-up: open the box by touching or shooting it, then eat the burger.
+    this.physics.add.overlap(player, this.burgers.boxes, (_p, box) => this.burgers.touchBox(box));
+    this.physics.add.overlap(this.shots.group, this.burgers.boxes, (shot, box) => {
+      this.burgers.touchBox(box);
+      this.shots.pop(shot);
+    });
+    this.physics.add.overlap(player, this.burgers.burgers, (_p, burger) => {
+      if (!player.dead && this.burgers.eat(burger)) player.growBig();
+    });
 
     this.physics.add.overlap(player, this.mangos.group, (_p, mango) => {
       if (player.invulnerable) return;
@@ -124,9 +137,11 @@ export default class GameScene extends Phaser.Scene {
       player.addAmmo(1);
     });
 
-    // What comes out of a music-note block: a rubber duck (collected right away) or the duck egg.
+    // What comes out of a music-note block: a rubber duck (collected right away), the duck egg or
+    // the burger box.
     this.events.on('block-item', (item, x, y) => {
       if (item === 'egg') return this.rideDucks.popEgg(x, y);
+      if (item === 'burger') return this.burgers.popBox(x, y, player.facing);
       const duck = this.add.image(x, y - 4, 'rubber-duck').setScale(DUCK_SCALE);
       this.tweens.add({ targets: duck, y: y - 28, duration: 250, ease: 'Quad.easeOut', yoyo: true, hold: 60,
         onComplete: () => duck.destroy() });
@@ -210,8 +225,8 @@ export default class GameScene extends Phaser.Scene {
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
         if (ch === 'b') return T.BRICK;
-        if (ch === 'N' || ch === 'Y') {
-          blockContents.set(`${x},${y}`, ch === 'Y' ? 'egg' : 'duck');
+        if (ch === 'N' || ch === 'Y' || ch === 'H') {
+          blockContents.set(`${x},${y}`, { Y: 'egg', H: 'burger' }[ch] ?? 'duck');
           return T.NOTE;
         }
         if (ch === '=') return T.PLATFORM;

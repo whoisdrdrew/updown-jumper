@@ -30,7 +30,8 @@ Test level items:
 - **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
-- **Duck egg**: comes out of a music-note block and hatches by itself (or touch or shoot it) into a big duck. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
+- **Burger (power-up, like Mario's mushroom)**: some music-note blocks hold a red and yellow burger box. It hops out, slides off the blocks, lands and pops open, and the burger rises out. Eat it and Boris grows big; the next hit (a mango, Solomun) only shrinks him back instead of costing a heart. Level 1 only has burgers.
+- **Duck egg** (saved for later levels): comes out of a music-note block and hatches by itself (or touch or shoot it) into a big duck. Jump on to ride it (it jumps a bit higher). If you get hit while riding, the duck runs off instead of you losing a heart; catch it again if you're quick.
 
 ## Project layout
 
@@ -42,6 +43,7 @@ Test level items:
 | `src/player/RubberDucks.js` | The rubber ducks you shoot. |
 | `src/objects/Mangos.js` | Mangos: the slip hazard. |
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
+| `src/objects/Burgers.js` | The burger box and the burger power-up. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/touch/TouchControls.js` | On-screen controls for phones. |
 | `src/objects/Boss.js` | Solomun, the world 1 end boss. |

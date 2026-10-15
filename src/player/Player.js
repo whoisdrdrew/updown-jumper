@@ -7,7 +7,8 @@ import DuckPuffs from './DuckPuffs.js';
 const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 20, h: 28 } };
 
 // The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
-// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).
+// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count),
+// 'grow', 'shrink'.
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, input) {
     super(scene, x, y, 'bare-idle');
@@ -29,6 +30,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.hits = 0;
     this.ammo = PLAYER.startAmmo;
     this.riding = false;
+    this.big = false; // after eating a burger; a hit shrinks him back instead of costing a heart
     this.masked = false; // every level starts without the mask; the suitcase gives it
     this.dead = false;
     this.safeUntil = 0;
@@ -125,6 +127,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.blink();
       return;
     }
+    if (this.big) {
+      this.flickerSize(false);
+      this.emit('shrink');
+      this.blink();
+      return;
+    }
     this.hits += 1;
     this.emit('hurt', this.hits);
     if (this.hits >= PLAYER.maxHits) this.die();
@@ -168,6 +176,43 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  // Ate a burger: grow big, flickering between the two sizes like Mario does.
+  growBig() {
+    if (this.big || this.dead) return;
+    this.flickerSize(true);
+    this.emit('grow');
+  }
+
+  flickerSize(big) {
+    this.safeUntil = Math.max(this.safeUntil, this.scene.time.now + 500);
+    let step = 0;
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 6,
+      callback: () => {
+        step += 1;
+        if (!this.dead) this.setBig(step === 7 ? big : step % 2 === 1 ? !big : big);
+      },
+    });
+    this.setBig(big);
+  }
+
+  // Big or small: the picture and the hitbox scale together, feet staying where they are.
+  setBig(big) {
+    this.big = big;
+    const bottom = this.body.bottom;
+    const velocity = this.body.velocity.clone();
+    this.setScale(HERO_SCALE * (big ? PLAYER.bigScale : 1));
+    this.fitBody(this.riding ? SIZE.riding : this.footSize);
+    this.body.reset(this.x, bottom - this.displayHeight / 2);
+    this.body.setVelocity(velocity.x, velocity.y);
+  }
+
+  get footSize() {
+    const k = this.big ? PLAYER.bigScale : 1;
+    return { w: SIZE.foot.w * k, h: SIZE.foot.h * k };
+  }
+
   mount() {
     if (this.riding || this.dead) return;
     this.riding = true;
@@ -180,7 +225,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setAngle(0);
     const { x } = this;
     const bottom = this.body.bottom;
-    this.resize(`${this.look}-idle`, SIZE.foot);
+    this.resize(`${this.look}-idle`, this.footSize);
     this.body.setVelocityY(-200); // jump off the duck
     this.emit('dismount', x, bottom - 8, -this.facing);
   }

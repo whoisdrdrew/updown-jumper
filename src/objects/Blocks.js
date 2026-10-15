@@ -13,7 +13,7 @@ export default class Blocks {
     this.scene = scene;
     this.layer = layer; // collisions (never drawn)
     this.view = view; // what you see: the same tiles at the hero's pixel size
-    this.contents = contents; // Map of "x,y" tile coordinates -> 'duck' | 'egg'
+    this.contents = contents; // Map of "x,y" tile coordinates -> 'duck' | 'egg' | 'burger'
     this.lastBumpFrame = -1;
 
     // Individual tile images, used for the bump animation.

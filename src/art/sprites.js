@@ -14,6 +14,10 @@ import caseOpen from './suitcase/open.png';
 import mango from './world/mango.png';
 import egg from './world/egg.png';
 import eggHalf from './world/egg-half.png';
+import burger from './world/burger.png';
+import burgerBox from './world/burger-box.png';
+import burgerBoxLid from './world/burger-box-lid.png';
+import burgerBoxBase from './world/burger-box-base.png';
 import heart from './world/heart.png';
 import heartEmpty from './world/heart-empty.png';
 import brickPiece from './world/brick-piece.png';
@@ -56,6 +60,11 @@ export function preloadSprites(scene) {
   scene.load.image('mango', mango);
   scene.load.image('egg', egg);
   scene.load.image('egg-half', eggHalf);
+  // The burger power-up and the box it pops out of (art/powerups/ in the project files).
+  scene.load.image('burger', burger);
+  scene.load.image('burger-box', burgerBox);
+  scene.load.image('burger-box-lid', burgerBoxLid);
+  scene.load.image('burger-box-base', burgerBoxBase);
   scene.load.image('heart', heart);
   scene.load.image('heart-empty', heartEmpty);
   scene.load.image('brick-piece', brickPiece);

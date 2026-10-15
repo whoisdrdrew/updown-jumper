@@ -38,6 +38,7 @@ export const PLAYER = {
 
   maxHits: 2, // the second mango slip (or other hit) loses a life
   startAmmo: 0, // rubber ducks to shoot at the start; collect more in the level
+  bigScale: 1.35, // after eating a burger Boris is drawn (and his hitbox is) this much bigger
   blinkMs: 1500, // after a hit the player blinks and can't be hurt again for this long
 };
 
@@ -64,6 +65,15 @@ export const RIDE_DUCK = {
   jumpBoost: 1.2, // jumps higher while riding (about 4 tiles from standing instead of 3)
   fleeSpeed: 130, // when you get hit, the duck runs off this fast...
   fleeRemountMs: 600, // ...and can be caught again after this long, if you're quick
+};
+
+// The burger power-up (our Mario mushroom): a box hops out of a music-note block, lands, and
+// opens; eat the burger to grow big. Big, the next hit only shrinks you back.
+export const BURGER = {
+  boxHopSpeedX: 50, // the box hops out sideways, the way the player faces...
+  boxHopSpeedY: 160,
+  boxSlideSpeed: 60, // on top of blocks it slides along until it drops to the ground
+  openDelayMs: 500, // ...lands, wobbles, and pops open after this long (or when touched)
 };
 
 // The end boss of world 1, Solomun. Mario 3 Koopaling rules: three hits and he's out, and after
