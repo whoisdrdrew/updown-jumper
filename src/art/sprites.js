@@ -28,6 +28,7 @@ import solomunCloudBack0 from './solomun/cloud-back-0.png';
 import solomunCloudBack1 from './solomun/cloud-back-1.png';
 import solomunCloudFront0 from './solomun/cloud-front-0.png';
 import solomunCloudFront1 from './solomun/cloud-front-1.png';
+import airPuff from './world/air-puff.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
@@ -71,6 +72,8 @@ export function preloadSprites(scene) {
   scene.load.image('solomun-cloud-back-1', solomunCloudBack1);
   scene.load.image('solomun-cloud-front-0', solomunCloudFront0);
   scene.load.image('solomun-cloud-front-1', solomunCloudFront1);
+  // Air the ride duck squeezes out (player/DuckPuffs.js): three frames of a growing puff.
+  scene.load.spritesheet('air-puff', airPuff, { frameWidth: 16, frameHeight: 14 });
 }
 
 // Everything is drawn at twice the world resolution and shown at half size.
