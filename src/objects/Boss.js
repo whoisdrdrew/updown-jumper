@@ -134,8 +134,18 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   flash() {
+    // Blink white a few times, and always end on his normal colours.
+    let step = 0;
     this.setTintFill(0xffffff);
-    this.scene.time.addEvent({ delay: 70, repeat: 5, callback: () => (this.tintFill ? this.clearTint() : this.setTintFill(0xffffff)) });
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 5,
+      callback: () => {
+        step += 1;
+        if (step % 2 === 0 && step < 6) this.setTintFill(0xffffff);
+        else this.clearTint();
+      },
+    });
   }
 
   defeat() {
