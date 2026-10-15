@@ -3,7 +3,6 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config.js';
 import skyImage from './world/bg-sky.png';
 import venueImage from './world/bg-venue.png';
 import crowdImage from './world/bg-crowd.png';
-import waterImage from './world/bg-water.png';
 import tulumRoofImage from './world/solomun/roof.png';
 import tulumLampsImage from './world/solomun/lamps.png';
 import tulumCrowd0 from './world/solomun/crowd-0.png';
@@ -14,7 +13,7 @@ import tulumCrowd3 from './world/solomun/crowd-3.png';
 // Each world has a backdrop themed on its DJ boss, in layers that scroll at different speeds.
 //   club:    sunset sky, the venue with its stage screen, moving light beams, the crowd and palms.
 //   solomun: the wooden beach hut of his Tulum set, wicker lamps and a dancing crowd.
-// Water fills the pits in every world.
+// Pits are plain black gaps in every world, like Mario 3.
 
 // The layers are drawn by tools/world_art.py and tools/world_solomun.py at the hero's pixel size
 // (twice the world resolution) and shown at half size.
@@ -34,7 +33,6 @@ export function preloadBackground(scene) {
   scene.load.image('bg-sky', skyImage);
   scene.load.image('bg-venue', venueImage);
   scene.load.image('bg-crowd', crowdImage);
-  scene.load.image('bg-water', waterImage);
   scene.load.image('tulum-roof', tulumRoofImage);
   scene.load.image('tulum-lamps', tulumLampsImage);
   TULUM_CROWD.forEach((image, i) => scene.load.image(`tulum-crowd-${i}`, image));
@@ -51,13 +49,11 @@ export function createBackground(scene, worldW, worldH, theme = 'solomun') {
     scene.add.tileSprite(x, y, w / ART_SCALE, h / ART_SCALE, key).setOrigin(0).setScale(ART_SCALE).setScrollFactor(scroll);
 
   const updateWorld = theme === 'club' ? clubLayers(scene, cam, ox, oy, layer) : tulumLayers(scene, cam, ox, oy, layer);
-  const water = layer('bg-water', 0, worldH - 36, worldW, 40, 1);
+  // Black from the top of the ground (three tile rows) down, so a pit is a black gap; the ground
+  // tiles cover it everywhere else.
+  scene.add.rectangle(0, worldH - 48, worldW, 64, 0x000000).setOrigin(0);
 
-  return function update(time) {
-    updateWorld(time);
-    // tilePosition counts picture pixels, two per world pixel.
-    water.tilePositionX = (time * 0.01) / ART_SCALE;
-  };
+  return updateWorld;
 }
 
 function clubLayers(scene, cam, ox, oy, layer) {
