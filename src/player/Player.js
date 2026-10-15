@@ -5,11 +5,11 @@ import { HERO_SCALE } from '../art/sprites.js';
 // Hitbox sizes on foot and riding the big duck.
 const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 18, h: 26 } };
 
-// The Up-Down-Jumper. For now a colored box; the real sprite comes in the art milestone.
+// The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, input) {
-    super(scene, x, y, 'hero-idle');
+    super(scene, x, y, 'bare-idle');
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setScale(HERO_SCALE);
@@ -26,6 +26,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.hits = 0;
     this.ammo = PLAYER.startAmmo;
     this.riding = false;
+    this.masked = false; // every level starts without the mask; the suitcase gives it
     this.dead = false;
     this.safeUntil = 0;
     this.steerLockedUntil = 0;
@@ -33,6 +34,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   get facing() {
     return this.flipX ? -1 : 1;
+  }
+
+  // Which set of pictures to draw: 'hero' with the mask, 'bare' without.
+  get look() {
+    return this.masked ? 'hero' : 'bare';
   }
 
   get invulnerable() {
@@ -142,10 +148,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.emit('dead');
   }
 
+  // Jumped on the suitcase: the mask goes on and stays on until this life ends.
+  putOnMask() {
+    if (this.masked || this.dead) return;
+    this.masked = true;
+    this.setTexture(this.riding ? 'hero-rider' : 'hero-idle');
+    // A quick white flash as it goes on (a scale pop would also resize the hitbox).
+    this.setTintFill(0xffffff);
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 4,
+      callback: () => (this.tintFill ? this.clearTint() : this.setTintFill(0xffffff)),
+    });
+  }
+
   mount() {
     if (this.riding || this.dead) return;
     this.riding = true;
-    this.resize('rider', SIZE.riding);
+    this.resize(`${this.look}-rider`, SIZE.riding);
   }
 
   dismount() {
@@ -153,7 +173,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.riding = false;
     const { x } = this;
     const bottom = this.body.bottom;
-    this.resize('hero-idle', SIZE.foot);
+    this.resize(`${this.look}-idle`, SIZE.foot);
     this.body.setVelocityY(-200); // jump off the duck
     this.emit('dismount', x, bottom - 8, -this.facing);
   }
@@ -177,7 +197,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       const stepMs = Math.abs(this.body.velocity.x) > 120 ? 90 : 140;
       pose = Math.floor(time / stepMs) % 2 ? 'run' : 'idle';
     }
-    this.setTexture(`hero-${pose}`);
+    this.setTexture(`${this.look}-${pose}`);
   }
 
   // Swap texture and hitbox while keeping the feet where they were.

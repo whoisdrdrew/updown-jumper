@@ -6,6 +6,7 @@ import RubberDucks from '../player/RubberDucks.js';
 import Mangos from '../objects/Mangos.js';
 import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
+import Suitcase from '../objects/Suitcase.js';
 import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM } from '../config.js';
 import { createSprites, preloadSprites } from '../art/sprites.js';
 import { createTiles } from '../art/tiles.js';
@@ -31,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createTiles(this);
     createSprites(this);
-    const { map, layer, start, goal, mangos, eggs, pickups, blockContents } = this.buildLevel(testLevel);
+    const { map, layer, start, goal, mangos, eggs, pickups, blockContents, suitcase } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -47,6 +48,7 @@ export default class GameScene extends Phaser.Scene {
     this.blocks = new Blocks(this, layer, blockContents);
     this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
     this.addItems(layer, mangos, eggs, pickups);
+    if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
 
     this.addGoal(goal);
 
@@ -184,6 +186,7 @@ export default class GameScene extends Phaser.Scene {
     const mangos = [];
     const eggs = [];
     const pickups = [];
+    let suitcase = null;
     const blockContents = new Map();
 
     const data = rows.map((row, y) =>
@@ -192,6 +195,7 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'F') goal = { x: x * TILE + TILE / 2, y: y * TILE };
         if (ch === 'M') mangos.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
+        if (ch === 'S') suitcase = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
         if (ch === 'E') eggs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === '#') return rows[y - 1]?.[x] === '#' ? T.DIRT : T.GRASS;
         if (ch === 'B') return T.BLOCK;
@@ -219,7 +223,7 @@ export default class GameScene extends Phaser.Scene {
       if (below?.collides) below.faceTop = true;
     });
     this.children.remove(layer); // re-added after the background so it draws on top
-    return { map, layer, start, goal, mangos, eggs, pickups, blockContents };
+    return { map, layer, start, goal, mangos, eggs, pickups, blockContents, suitcase };
   }
 
   addGoal(goal) {

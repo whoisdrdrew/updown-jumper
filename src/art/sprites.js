@@ -3,8 +3,16 @@ import heroIdle from './hero/idle.png';
 import heroRun from './hero/run.png';
 import heroJump from './hero/jump.png';
 import heroSit from './hero/sit.png';
+import bareIdle from './hero-bare/idle.png';
+import bareRun from './hero-bare/run.png';
+import bareJump from './hero-bare/jump.png';
+import bareSit from './hero-bare/sit.png';
+import caseClosed from './suitcase/closed.png';
+import caseMask from './suitcase/mask.png';
+import caseOpen from './suitcase/open.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
+// 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
 // They are drawn at half size, so each picture pixel is one screen pixel at ZOOM 2.
 export const HERO_SCALE = 0.5;
 
@@ -13,6 +21,14 @@ export function preloadSprites(scene) {
   scene.load.image('hero-run', heroRun);
   scene.load.image('hero-jump', heroJump);
   scene.load.image('hero-sit', heroSit);
+  scene.load.image('bare-idle', bareIdle);
+  scene.load.image('bare-run', bareRun);
+  scene.load.image('bare-jump', bareJump);
+  scene.load.image('bare-sit', bareSit);
+  // The suitcase the mask starts in (art/suitcase-*.png), shrunk to sit a little under head height.
+  scene.load.image('case-closed', caseClosed);
+  scene.load.image('case-mask', caseMask);
+  scene.load.image('case-open', caseOpen);
 }
 
 // Placeholder pixel art in the style of the Ibiza club reference (art/style-reference.png in the
@@ -105,11 +121,13 @@ const HEART_EMPTY = HEART.map((r) => r.replace(/r/g, 'D'));
 // (two picture pixels per world pixel); the duck is drawn three times larger, which matches the
 // big duck standing in the level at RIDE_DUCK_SCALE.
 export const RIDE_DUCK_SCALE = 1.5;
-function makeRider(scene) {
-  if (scene.textures.exists('rider')) return;
-  const hero = scene.textures.get('hero-sit').getSourceImage();
+// 'hero-rider' (with mask) or 'bare-rider' (without), composed from the sitting pose.
+function makeRider(scene, look) {
+  const key = `${look}-rider`;
+  if (scene.textures.exists(key)) return;
+  const hero = scene.textures.get(`${look}-sit`).getSourceImage();
   const duck = scene.textures.get('big-duck').getSourceImage();
-  const tex = scene.textures.createCanvas('rider', 55, 61);
+  const tex = scene.textures.createCanvas(key, 55, 61);
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(duck, 0, 0, 18, 14, 1, 19, 54, 42);
@@ -121,7 +139,8 @@ export function createSprites(scene) {
   const make = (key, rows) => pixelTexture(scene, key, rows, PALETTE);
 
   make('big-duck', BIG_DUCK);
-  makeRider(scene);
+  makeRider(scene, 'hero');
+  makeRider(scene, 'bare');
   make('rubber-duck', RUBBER_DUCK);
   make('mango', MANGO);
   make('egg', EGG);

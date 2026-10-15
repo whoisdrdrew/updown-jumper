@@ -4,5 +4,6 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   server: { host: true },
-  build: { chunkSizeWarningLimit: 2000 }, // Phaser itself is ~1.2 MB
+  // Phaser itself is ~1.2 MB. Sprite pictures are small, so they're built into the script.
+  build: { chunkSizeWarningLimit: 2000, assetsInlineLimit: 16384 },
 });
