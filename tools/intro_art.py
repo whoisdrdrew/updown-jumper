@@ -256,9 +256,19 @@ def bedroom():
     return c
 
 
-def door(open_):
+def door(open_, from_outside=False):
     dh = FLOOR_Y - DOOR_Y
     c = Canvas(64, dh)
+    if open_ and from_outside:
+        # Looking into the bedroom: cream wall, a strip of gold panel, the marble floor.
+        c.rect(0, 0, 64, dh, CREAM[3])
+        put(c, (np.mgrid[0:dh, 0:64].sum(0) % 2 == 0) & (np.mgrid[0:dh, 0:64][1] < 20), CREAM[2])
+        frame(c, 24, 20, 30, 60, GILT[1])
+        c.rect(0, dh - 20, 64, 20, MARBLE[2]); c.rect(0, dh - 20, 64, 2, MARBLE[3]); c.rect(0, dh - 21, 64, 1, CREAM[1])
+        box(c, 0, 0, 14, dh, CREAM[1:], outline=False)
+        c.rect(14, 0, 1, dh, OUTLINE)
+        c.rect(0, 0, 64, 1, OUTLINE)
+        return c
     if not open_:
         box(c, 1, 1, 62, dh - 1, CREAM[1:], outline=False)
         for y0, h_ in ((10, 54), (72, dh - 84)):                         # two raised panels
@@ -424,6 +434,7 @@ def main():
     door(False).save(os.path.join(out, 'door-closed.png'))
     door(True).save(os.path.join(out, 'door-open.png'))
     outside().save(os.path.join(out, 'outside.png'))
+    door(True, from_outside=True).save(os.path.join(out, 'villa-door-open.png'))
     print('saved to', out)
 
 
