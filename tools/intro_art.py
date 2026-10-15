@@ -176,21 +176,30 @@ def bedroom():
     put(c, inner, GILT[1])
     outline_of(c, arch)
 
-    # Painting of the mask in a gold frame.
+    # A framed picture of Boris and Ginger together, at their game size.
     px_, py_, pw, ph = 290, 62, 68, 82
     box(c, px_, py_, pw, ph, GILT)
-    c.rect(px_ + 5, py_ + 5, pw - 10, ph - 10, '#221533')
-    mx, my = px_ + pw // 2, py_ + 46
-    face = c.ellipse_mask(mx, my, 18, 20)
-    c.shade(face, mx, my, 18, 20, WHITE, cuts=(-0.2, 0.4))
-    for i in range(-2, 3):
-        tx, ty = mx + i * 7, my - 34 + (6 if i % 2 else 0)
-        for y in range(ty, my - 14):
-            half_ = int((y - ty) * 0.35) + 1
-            c.rect(tx - half_, y, half_ * 2, 1, GOLD[2] if y < ty + 8 else GOLD[1])
-    c.rect(mx - 13, my - 4, 9, 5, BLUE[1]); c.rect(mx + 4, my - 4, 9, 5, BLUE[1])
-    c.rect(mx - 11, my - 3, 5, 3, OUTLINE); c.rect(mx + 6, my - 3, 5, 3, OUTLINE)
-    c.rect(mx - 5, my - 14, 10, 4, GOLD[2])
+    ix, iy, iw, ih = px_ + 5, py_ + 5, pw - 10, ph - 10
+    bg = Canvas(iw, ih)
+    dither_bands(bg, ['#86305c', '#cc5450', '#f08c4a', '#f6a64a', '#ffd27a'])
+    c.a[iy:iy + ih, ix:ix + iw] = bg.a
+    heart = ['.##...##.', '####.####', '#########', '.#######.', '..#####..', '...###...', '....#....']
+    for hy, row in enumerate(heart):                                          # a little heart above them
+        for hx, v in enumerate(row):
+            if v == '#':
+                c.px(ix + iw // 2 - 4 + hx, iy + 5 + hy, '#ffb0b8' if (hy == 1 and hx in (1, 2)) else '#f04a5a')
+    from PIL import Image
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path, x in ((os.path.join(here, '..', 'src', 'art', 'hero-bare', 'idle.png'), ix - 2),
+                    ('/mnt/project-files/art/ginger/ginger-idle.png', ix + iw - 28)):
+        if os.path.exists(path):
+            sp = Image.open(path).convert('RGBA')
+            sp = sp.crop(sp.getbbox())
+            spr = Canvas(sp.width, sp.height); spr.a[:] = np.array(sp)
+            c.paste(spr, x + (0 if 'ginger' in path else 1), iy + ih - sp.height)
+    box(c, px_, py_, pw, 5, GILT, outline=False); box(c, px_, py_ + ph - 5, pw, 5, GILT, outline=False)
+    box(c, px_, py_, 5, ph, GILT, outline=False); box(c, px_ + pw - 5, py_, 5, ph, GILT, outline=False)
+    frame(c, px_ - 1, py_ - 1, pw + 2, ph + 2, OUTLINE); frame(c, ix - 1, iy - 1, iw + 2, ih + 2, OUTLINE)
 
     # Chandelier in the middle of the room.
     chandelier(c, 158)
