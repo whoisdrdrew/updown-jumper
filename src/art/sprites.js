@@ -56,7 +56,7 @@ export function preloadSprites(scene) {
   scene.load.image('brick-piece', brickPiece);
   scene.load.image('goal-flag', goalFlag);
   scene.load.image('goal-pole', goalPole);
-  // Solomun, the world 1 boss (art/solomun/ in the project files), hero-sized.
+  // Solomun, the world 1 boss (art/solomun/ in the project files): a head taller and twice as wide as the hero.
   scene.load.image('solomun-meditate', solomunMeditate);
   scene.load.image('solomun-attack', solomunAttack);
   scene.load.image('solomun-defeat', solomunDefeat);

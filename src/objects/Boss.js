@@ -14,8 +14,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setScale(SCALE).setDepth(5);
     this.body.setAllowGravity(false);
-    // Hitbox: head and body, a little inside the outline (picture pixels).
-    this.body.setSize(26, 40);
+    this.fitBody();
 
     this.arena = arena;
     this.hitsLeft = BOSS.hits;
@@ -44,9 +43,16 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.modeAt = this.scene.time.now;
     const towel = state === 'windup' || state === 'swoop' || state === 'low';
     this.setTexture(towel ? 'solomun-attack' : 'solomun-meditate');
-    // Keep the hitbox on the body whichever picture is showing.
-    this.body.setSize(26, 40);
-    this.body.setOffset((this.width - 26) / 2, this.height - 42);
+    this.fitBody();
+  }
+
+  // Hitbox: his head and round body, a little inside the outline, at the bottom of whichever
+  // picture is showing (the towel sticks out above it). Picture pixels: 22x23 in the world.
+  fitBody() {
+    const w = 44;
+    const h = 46;
+    this.body.setSize(w, h, false);
+    this.body.setOffset((this.width - w) / 2, this.height - h - 2);
   }
 
   update(time) {
