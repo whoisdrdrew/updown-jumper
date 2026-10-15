@@ -1,5 +1,5 @@
 // On-screen controls for phones and tablets, NES style: a cross on the left, B (shoot, hold to run)
-// and A (jump) on the right, in a bar under the game. Computers with a mouse never see them. Phones play sideways only.
+// and A (jump) on the right, see-through on top of the brick floor of a full-screen game. Computers with a mouse never see them. Phones play sideways only.
 //
 // The buttons only set flags in `touch`; Controls.js reads them next to the keyboard, so the
 // game itself doesn't know or care where an input came from.
@@ -28,11 +28,16 @@ const CSS = `
   body.touch-mode #help { display: none; }
   body.touch-mode, body.touch-mode #game { touch-action: none; user-select: none; -webkit-user-select: none;
     -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-  #touch { flex: 0 0 auto; height: min(132px, 38vh); display: flex; align-items: center; justify-content: space-between;
-    padding: 0 max(20px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  /* Full screen game; the controls float over the brick floor at the bottom, half see-through. */
+  body.touch-mode { padding: 0 !important; overflow: hidden; height: 100dvh; }
+  body.touch-mode #game { position: fixed; inset: 0; }
+  #touch { position: fixed; left: 0; right: 0; bottom: 0; height: min(130px, 32vh); z-index: 5; pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: space-between; opacity: 0.55;
+    padding: 0 max(14px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
     box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #touch .pad, #touch .btn { pointer-events: auto; }
   /* NES look, after Sandro's reference: black cross in a grey frame, red B and A on a grey pill. */
-  #touch .pad { position: relative; height: 92%; aspect-ratio: 1; }
+  #touch .pad { position: relative; height: 85%; aspect-ratio: 1; }
   #touch .pad .frame { position: absolute; background: #8e8790; border: 2px solid #150b22; border-radius: 10px; }
   #touch .pad .frame.h { left: 0; right: 0; top: 30%; height: 40%; }
   #touch .pad .frame.v { top: 0; bottom: 0; left: 30%; width: 40%; }
@@ -51,7 +56,7 @@ const CSS = `
   #touch .pad .a-down.on { border-top-color: #ffe680; }
   #touch .pad .a-left.on { border-right-color: #ffe680; }
   #touch .pad .a-right.on { border-left-color: #ffe680; }
-  #touch .buttons { position: relative; height: 100%; aspect-ratio: 1.6; }
+  #touch .buttons { position: relative; height: 92%; aspect-ratio: 1.6; }
   #touch .pill { position: absolute; left: 4%; right: 4%; top: 26%; height: 52%; background: #a396a6;
     border: 2px solid #150b22; border-radius: 999px; transform: rotate(-22deg); }
   #touch .btn { position: absolute; width: 34%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #150b22;

@@ -26,8 +26,8 @@ function startGame() {
   window.__game = game;
 }
 
-// Phones get on-screen controls under the game; done before the game starts so the game is sized
-// to the space that is left.
+// Phones get on-screen controls over the game; set up before the game starts so it is sized to
+// the whole screen.
 setupTouchControls(() => window.__game);
 
 // Wait briefly for the pixel font so the HUD uses it from the first frame; fall back to monospace.
