@@ -21,6 +21,7 @@ Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), 
 
 Test level items:
 
+- **The mask**: every level starts without it. Jump on the suitcase in front of you: it opens, the mask goes on, and it stays on until you lose the life.
 - **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
@@ -37,6 +38,7 @@ Test level items:
 | `src/objects/Mangos.js` | Mangos: the slip hazard. |
 | `src/objects/Blocks.js` | Breakable bricks and music-note item blocks. |
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
+| `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/art/` | Art: the hero's poses (`src/art/hero/*.png`, cut from the pose sheet) and placeholder pixel art drawn in code for everything else. |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
