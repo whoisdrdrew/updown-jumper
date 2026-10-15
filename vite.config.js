@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   server: { host: true },
-  // Phaser itself is ~1.2 MB. Sprite pictures are small, so they're built into the script.
-  build: { chunkSizeWarningLimit: 2000, assetsInlineLimit: 16384 },
+  // Phaser itself is ~1.2 MB. All pictures (the biggest is the 48 KB hut roof) are built into the script,
+  // so the game is a single file that works wherever it is hosted.
+  build: { chunkSizeWarningLimit: 2000, assetsInlineLimit: 100000 },
 });
