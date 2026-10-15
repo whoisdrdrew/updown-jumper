@@ -8,9 +8,9 @@ import RideDucks from '../objects/RideDucks.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM } from '../config.js';
-import { createSprites, preloadSprites, DUCK_SCALE } from '../art/sprites.js';
-import { createTiles } from '../art/tiles.js';
-import { createBackground } from '../art/background.js';
+import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
+import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
+import { createBackground, preloadBackground } from '../art/background.js';
 
 const FONT = '"Press Start 2P", monospace';
 import testLevel from '../levels/testLevel.js';
@@ -23,6 +23,8 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     preloadSprites(this);
+    preloadTiles(this);
+    preloadBackground(this);
   }
 
   create() {
@@ -30,14 +32,14 @@ export default class GameScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
-    createTiles(this);
     createSprites(this);
-    const { map, layer, start, goal, mangos, eggs, pickups, blockContents, suitcase } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
     this.updateBackground = createBackground(this, worldW, worldH);
     this.add.existing(layer);
+    this.add.existing(view);
     this.layer = layer;
 
     // Open bottom edge: falling into a pit leaves the world.
@@ -45,7 +47,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.controls = new Controls(this);
     this.player = new Player(this, start.x, start.y, this.controls);
-    this.blocks = new Blocks(this, layer, blockContents);
+    this.blocks = new Blocks(this, layer, view, blockContents);
     this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
     this.addItems(layer, mangos, eggs, pickups);
     if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
@@ -147,7 +149,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.hearts = [];
     for (let i = 0; i < PLAYER.maxHits; i++) {
-      this.hearts.push(this.add.image(ux + 10 + i * 10, uy + 9, 'heart').setScrollFactor(0).setDepth(10));
+      this.hearts.push(this.add.image(ux + 10 + i * 10, uy + 9, 'heart').setScale(ITEM_SCALE).setScrollFactor(0).setDepth(10));
     }
     this.add.image(ux + 10, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
     this.ammoText = text(17, 18, '');
@@ -209,9 +211,12 @@ export default class GameScene extends Phaser.Scene {
       }),
     );
 
+    // Collisions use a 16 px tilemap that is never drawn. What you see is a second tilemap with the
+    // same tiles drawn at the hero's pixel size (32 px), shown at half size. Blocks.js keeps both in step.
     const map = this.make.tilemap({ data, tileWidth: TILE, tileHeight: TILE });
-    const tileset = map.addTilesetImage('tiles');
-    const layer = map.createLayer(0, tileset, 0, 0);
+    const layer = map.createLayer(0, map.addTilesetImage('tiles', 'tiles', TILE, TILE), 0, 0).setVisible(false);
+    const viewMap = this.make.tilemap({ data, tileWidth: TILE_ART, tileHeight: TILE_ART });
+    const view = viewMap.createLayer(0, viewMap.addTilesetImage('tiles'), 0, 0).setScale(TILE_SCALE);
     layer.setCollision([T.GRASS, T.BLOCK, T.DIRT, T.NOTE, T.USED, T.BRICK]);
     // Thin platforms only block from above.
     layer.forEachTile((tile) => {
@@ -223,7 +228,8 @@ export default class GameScene extends Phaser.Scene {
       if (below?.collides) below.faceTop = true;
     });
     this.children.remove(layer); // re-added after the background so it draws on top
-    return { map, layer, start, goal, mangos, eggs, pickups, blockContents, suitcase };
+    this.children.remove(view);
+    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase };
   }
 
   addGoal(goal) {
@@ -231,9 +237,8 @@ export default class GameScene extends Phaser.Scene {
     // The pole runs from the F tile down to the ground below it.
     const groundY = this.findGroundBelow(goal.x, goal.y);
     const poleH = groundY - goal.y;
-    this.add.rectangle(goal.x, goal.y + poleH / 2, 2, poleH, 0xdcdcf0);
-    this.add.circle(goal.x, goal.y, 2, 0xf2c230);
-    this.add.triangle(goal.x + 1, goal.y + 7, 0, 0, 0, 10, 12, 5, 0xff5aa0).setOrigin(0, 0.5);
+    this.add.tileSprite(goal.x, goal.y + 2, 6, (poleH - 2) / ITEM_SCALE, 'goal-pole').setOrigin(0.5, 0).setScale(ITEM_SCALE);
+    this.add.image(goal.x - 2, goal.y - 2, 'goal-flag').setOrigin(0, 0).setScale(ITEM_SCALE);
 
     const zone = this.add.zone(goal.x, goal.y + poleH / 2, 10, poleH);
     this.physics.add.existing(zone, true);

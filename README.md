@@ -40,7 +40,7 @@ Test level items:
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
-| `src/art/` | Art: the hero's poses (`src/art/hero/*.png`, cut from the pose sheet) and placeholder pixel art drawn in code for everything else. |
+| `src/art/` | Art. The hero, the little duck and the suitcase are cleaned from Sandro's art; the ride duck, tiles, items and backgrounds in `src/art/world/` are drawn by `tools/world_art.py` at the same pixel size (run `python3 tools/world_art.py` to redraw them). |
 | `src/scenes/GameScene.js` | Builds the level, camera, goal flag, pits and restarts. |
 
 ## Publishing
