@@ -1,4 +1,5 @@
 import { RIDE_DUCK } from '../config.js';
+import { RIDE_DUCK_SCALE } from '../art/sprites.js';
 
 // The big ride-on duck, Super Mario World Yoshi style: break the egg, the duck hops out,
 // jump on to ride it. When you get hit while riding, the duck runs away instead of you losing a life.
@@ -46,7 +47,7 @@ export default class RideDucks {
 
   // dir 0 = waits for the player; dir ±1 = runs away in that direction.
   spawnDuck(x, y, dir, mountDelayMs) {
-    const duck = this.ducks.create(x, y, 'big-duck');
+    const duck = this.ducks.create(x, y, 'big-duck').setScale(RIDE_DUCK_SCALE);
     duck.body.setSize(16, 13);
     duck.dir = dir;
     duck.mountableAt = this.scene.time.now + mountDelayMs;

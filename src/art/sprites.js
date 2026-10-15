@@ -2,8 +2,9 @@ import { pixelTexture } from './pixels.js';
 import heroIdle from './hero/idle.png';
 import heroRun from './hero/run.png';
 import heroJump from './hero/jump.png';
+import heroSit from './hero/sit.png';
 
-// The hero's poses, cut from Sandro's pose sheet (art/hero-poses.png in the project files).
+// The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // They are drawn at half size, so each picture pixel is one screen pixel at ZOOM 2.
 export const HERO_SCALE = 0.5;
 
@@ -11,6 +12,7 @@ export function preloadSprites(scene) {
   scene.load.image('hero-idle', heroIdle);
   scene.load.image('hero-run', heroRun);
   scene.load.image('hero-jump', heroJump);
+  scene.load.image('hero-sit', heroSit);
 }
 
 // Placeholder pixel art in the style of the Ibiza club reference (art/style-reference.png in the
@@ -99,17 +101,19 @@ const EGG_HALF = ['..kkk.', '.kwwwk', 'kwggwk', 'kwggwk', 'kwwwwk', 'kwwwWk', '.
 const HEART = ['.kk.kk..', 'krrkrrk.', 'krrrrrrk', 'krrrrrrk', '.krrrrk.', '..krrk..', '...kk...'];
 const HEART_EMPTY = HEART.map((r) => r.replace(/r/g, 'D'));
 
-// Riding: the hero's upper body (from the standing pose) on the duck's back, behind its head.
-// Built at the hero's resolution, so the duck is doubled.
+// Riding: the sitting pose on the duck's back, behind its head. Built at the hero's resolution
+// (two picture pixels per world pixel); the duck is drawn three times larger, which matches the
+// big duck standing in the level at RIDE_DUCK_SCALE.
+export const RIDE_DUCK_SCALE = 1.5;
 function makeRider(scene) {
   if (scene.textures.exists('rider')) return;
-  const hero = scene.textures.get('hero-idle').getSourceImage();
+  const hero = scene.textures.get('hero-sit').getSourceImage();
   const duck = scene.textures.get('big-duck').getSourceImage();
-  const tex = scene.textures.createCanvas('rider', 56, 54);
+  const tex = scene.textures.createCanvas('rider', 55, 61);
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(duck, 0, 0, 18, 14, 20, 26, 36, 28);
-  ctx.drawImage(hero, 0, 0, 44, 39, 0, 0, 44, 39);
+  ctx.drawImage(duck, 0, 0, 18, 14, 1, 19, 54, 42);
+  ctx.drawImage(hero, 0, 0); // seat on the rear of the back, clear of the neck; legs hang over its side
   tex.refresh();
 }
 

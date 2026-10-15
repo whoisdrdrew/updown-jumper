@@ -3,7 +3,7 @@ import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
 import { HERO_SCALE } from '../art/sprites.js';
 
 // Hitbox sizes on foot and riding the big duck.
-const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 16, h: 22 } };
+const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 18, h: 26 } };
 
 // The Up-Down-Jumper. For now a colored box; the real sprite comes in the art milestone.
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count).
