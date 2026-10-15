@@ -24,7 +24,7 @@ On a phone or tablet the game fills the screen and NES-style controls float, hal
 Test level items:
 
 - **The mask**: every level starts without it. Jump on the suitcase in front of you: it opens, the mask goes on, and it stays on until you lose the life.
-- **Solomun (end boss)**: waits in a one-screen arena before the flag. He floats cross-legged on a cloud of sauna steam, waves his towel, then dives and glides low over the floor. Jump on his head or hit him with a rubber duck: three hits and he's beaten (Mario 3 rules: after each hit he spins away for a moment and gets a little faster). Touching him any other way costs you a heart. The flag opens once he's gone.
+- **Solomun (end boss)**: waits in a one-screen arena before the flag. He floats cross-legged, sitting in a cloud of sauna steam, waves his towel, then dives and glides low over the floor. Jump on his head or hit him with a rubber duck: three hits and he's beaten (Mario 3 rules: after each hit he spins away for a moment and gets a little faster). Touching him any other way costs you a heart. The flag opens once he's gone.
 - **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
