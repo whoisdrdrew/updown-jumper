@@ -26,7 +26,7 @@ On a phone or tablet the game fills the screen, and the controls are kept small 
 Test level items:
 
 - **The mask**: every level starts without it. Jump on the suitcase in front of you: it opens, the mask goes on, and it stays on until you lose the life.
-- **Solomun (end boss)**: waits in a one-screen arena before the flag. He floats cross-legged, sitting in a cloud of sauna steam, waves his towel, then dives and glides low over the floor. Jump on his head or hit him with a rubber duck: three hits and he's beaten (Mario 3 rules: after each hit he spins away for a moment and gets a little faster). Touching him any other way costs you a heart. The flag opens once he's gone.
+- **Solomun (end boss)**: waits in a one-screen arena before the flag. He floats cross-legged, sitting in a cloud of sauna steam, waves his towel, then dives and glides low over the floor. Jump on his head or hit him with a rubber duck: three hits and he's beaten (Mario 3 rules: after each hit he spins away for a moment and gets a little faster). Touching him any other way costs you a heart. The flag opens once he's gone. Then **Felix the Photographer** (all in black, huge mustache, flash camera) walks in, Boris hops for joy, and Felix takes the winner photo: a white flash, a click, and the instant photo of you pops up and develops over the dimmed screen.
 - **Rubber ducks** float around the level like coins. Each one you collect is one shot; the counter is under the hearts.
 - **Mangos** lie on the floor. Step on one and you slip and blink (one heart gone); a second slip loses the life. Shoot them away with rubber ducks or jump over them.
 - **Blocks**: hit them from below. Brown bricks break. Music-note blocks (our "?" blocks) give a rubber duck or the duck egg, then turn into empty blocks.
@@ -48,6 +48,7 @@ Test level items:
 | `src/objects/RideDucks.js` | Duck egg and the ride-on big duck. |
 | `src/touch/TouchControls.js` | On-screen controls for phones. |
 | `src/objects/Boss.js` | Solomun, the world 1 end boss. |
+| `src/objects/WinnerPhoto.js` | Felix the Photographer and the winner photo after a boss fight. Art in `src/art/felix/` (by `tools/felix_art.py`). |
 | `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/art/` | Art. The hero, the little duck and the suitcase are cleaned from Sandro's art; the ride duck, tiles, items and backgrounds in `src/art/world/` are drawn by `tools/world_art.py` at the same pixel size (run `python3 tools/world_art.py` to redraw them). |

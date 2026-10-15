@@ -9,11 +9,13 @@ import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import Boss from '../objects/Boss.js';
+import takeWinnerPhoto from '../objects/WinnerPhoto.js';
 import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
 import { createBackground, preloadBackground } from '../art/background.js';
 import { preloadBonus, BONUS_SCALE } from '../art/bonus.js';
+import { preloadFelix } from '../art/felix.js';
 import { touch } from '../touch/TouchControls.js';
 
 const FONT = '"Press Start 2P", monospace';
@@ -30,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
     preloadTiles(this);
     preloadBackground(this);
     preloadBonus(this);
+    preloadFelix(this);
   }
 
   create() {
@@ -61,6 +64,7 @@ export default class GameScene extends Phaser.Scene {
     this.addGoal(goal);
     if (vipDoor) this.vipDoor = this.add.image(vipDoor.x, vipDoor.y, 'vip-door').setOrigin(0.5, 1).setScale(BONUS_SCALE).setDepth(1);
     this.bonusPlayed = false;
+    this.cutscene = false;
     this.inBonus = false;
 
     cam.setBounds(0, 0, worldW, worldH);
@@ -79,6 +83,7 @@ export default class GameScene extends Phaser.Scene {
   update(time, delta) {
     this.updateBackground(time);
     if (this.finished || this.inBonus) return;
+    if (this.cutscene) return this.player.animate(time, this.player.body.blocked.down);
     this.player.update(time, delta);
     if (this.controls.downJustPressed() && this.atVipDoor()) this.enterBonus();
     this.shots.update();
@@ -192,7 +197,7 @@ export default class GameScene extends Phaser.Scene {
       delay: 1000,
       loop: true,
       callback: () => {
-        if (this.finished || this.player.dead) return;
+        if (this.finished || this.cutscene || this.player.dead) return;
         this.timeLeft = Math.max(0, this.timeLeft - 1);
         this.updateHud();
         if (this.timeLeft === 0) this.player.die();
@@ -341,6 +346,9 @@ export default class GameScene extends Phaser.Scene {
     this.bossHud.forEach((o) => o.destroy());
     const text = this.banner('YOU WIN!');
     this.time.delayedCall(1800, () => text.destroy());
+    // Felix the Photographer takes the winner photo; the player waits until it's done.
+    this.cutscene = true;
+    takeWinnerPhoto(this, this.player, () => { this.cutscene = false; });
   }
 
   // Standing on the VIP door's platform, right in front of it.
