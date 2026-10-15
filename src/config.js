@@ -38,7 +38,7 @@ export const PLAYER = {
 
   maxHits: 2, // the second mango slip (or other hit) loses a life
   startAmmo: 0, // rubber ducks to shoot at the start; collect more in the level
-  bigScale: 1.35, // after eating a burger Boris is drawn (and his hitbox is) this much bigger
+  bigHeight: 26, // hitbox height after eating a burger (big Boris is about 1.3x as tall)
   blinkMs: 1500, // after a hit the player blinks and can't be hurt again for this long
 };
 

@@ -6,6 +6,14 @@ import bareIdle from './hero-bare/idle.png';
 import bareRun from './hero-bare/run.png';
 import bareJump from './hero-bare/jump.png';
 import bareSit from './hero-bare/sit.png';
+import bigHeroIdle from './hero-big/idle.png';
+import bigHeroRun from './hero-big/run.png';
+import bigHeroJump from './hero-big/jump.png';
+import bigHeroSit from './hero-big/sit.png';
+import bigBareIdle from './hero-big-bare/idle.png';
+import bigBareRun from './hero-big-bare/run.png';
+import bigBareJump from './hero-big-bare/jump.png';
+import bigBareSit from './hero-big-bare/sit.png';
 import duckBig from './duck/big.png';
 import duckSmall from './duck/small.png';
 import caseClosed from './suitcase/closed.png';
@@ -36,6 +44,7 @@ import airPuff from './world/air-puff.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
+// 'big-hero-*' and 'big-bare-*' are big Boris after eating a burger (art/hero-big/), about 1.3x as tall.
 // They are drawn at half size, so each picture pixel is one screen pixel at ZOOM 2.
 export const HERO_SCALE = 0.5;
 
@@ -48,6 +57,14 @@ export function preloadSprites(scene) {
   scene.load.image('bare-run', bareRun);
   scene.load.image('bare-jump', bareJump);
   scene.load.image('bare-sit', bareSit);
+  scene.load.image('big-hero-idle', bigHeroIdle);
+  scene.load.image('big-hero-run', bigHeroRun);
+  scene.load.image('big-hero-jump', bigHeroJump);
+  scene.load.image('big-hero-sit', bigHeroSit);
+  scene.load.image('big-bare-idle', bigBareIdle);
+  scene.load.image('big-bare-run', bigBareRun);
+  scene.load.image('big-bare-jump', bigBareJump);
+  scene.load.image('big-bare-sit', bigBareSit);
   // The masked rubber duck: the ride-on one is drawn by tools/world_art.py, the little ones you
   // collect and shoot are drawn by hand at their own size. Both are shown at DUCK_SCALE, like the hero.
   scene.load.image('big-duck', duckBig);
@@ -91,21 +108,23 @@ export const DUCK_SCALE = 0.5;
 
 // Riding: the sitting pose on the duck's back, behind its masked head. Hero and duck pictures
 // share a resolution (two picture pixels per world pixel), so they're drawn 1:1.
-// 'hero-rider' (with mask) or 'bare-rider' (without).
+// 'hero-rider' (with mask) or 'bare-rider' (without), and 'big-hero-rider' / 'big-bare-rider'.
 function makeRider(scene, look) {
   const key = `${look}-rider`;
   if (scene.textures.exists(key)) return;
   const hero = scene.textures.get(`${look}-sit`).getSourceImage();
   const duck = scene.textures.get('big-duck').getSourceImage();
-  const tex = scene.textures.createCanvas(key, 55, 67);
+  // The seat is where the normal sitting pose's bottom (50 px down) meets the duck's back; a taller
+  // big pose sits on the same spot, so the duck moves down by the extra height.
+  const duckY = 12 + hero.height - 50;
+  const tex = scene.textures.createCanvas(key, Math.max(55, hero.width), duckY + duck.height);
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(duck, 8, 12);
+  ctx.drawImage(duck, 8, duckY);
   ctx.drawImage(hero, 0, 0); // seat on the back, face and crown of the duck still showing
   tex.refresh();
 }
 
 export function createSprites(scene) {
-  makeRider(scene, 'hero');
-  makeRider(scene, 'bare');
+  for (const look of ['hero', 'bare', 'big-hero', 'big-bare']) makeRider(scene, look);
 }

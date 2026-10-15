@@ -4,7 +4,12 @@ import { HERO_SCALE } from '../art/sprites.js';
 import DuckPuffs from './DuckPuffs.js';
 
 // Hitbox sizes on foot and riding the big duck.
-const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 20, h: 28 } };
+const SIZE = {
+  foot: { w: PLAYER.width, h: PLAYER.height },
+  riding: { w: 20, h: 28 },
+  bigFoot: { w: PLAYER.width + 1, h: PLAYER.bigHeight },
+  bigRiding: { w: 20, h: 28 + PLAYER.bigHeight - PLAYER.height },
+};
 
 // The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count),
@@ -42,9 +47,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     return this.flipX ? -1 : 1;
   }
 
-  // Which set of pictures to draw: 'hero' with the mask, 'bare' without.
+  // Which set of pictures to draw: 'hero' with the mask, 'bare' without; 'big-' after a burger.
   get look() {
-    return this.masked ? 'hero' : 'bare';
+    return (this.big ? 'big-' : '') + (this.masked ? 'hero' : 'bare');
   }
 
   get invulnerable() {
@@ -166,7 +171,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   putOnMask() {
     if (this.masked || this.dead) return;
     this.masked = true;
-    this.setTexture(this.riding ? 'hero-rider' : 'hero-idle');
+    this.setTexture(`${this.look}-${this.riding ? 'rider' : 'idle'}`);
     // A quick white flash as it goes on (a scale pop would also resize the hitbox).
     this.setTintFill(0xffffff);
     this.scene.time.addEvent({
@@ -197,26 +202,25 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setBig(big);
   }
 
-  // Big or small: the picture and the hitbox scale together, feet staying where they are.
+  // Big or small: swap to the same pose in the other size, with the matching hitbox.
   setBig(big) {
     this.big = big;
-    const bottom = this.body.bottom;
-    const velocity = this.body.velocity.clone();
-    this.setScale(HERO_SCALE * (big ? PLAYER.bigScale : 1));
-    this.fitBody(this.riding ? SIZE.riding : this.footSize);
-    this.body.reset(this.x, bottom - this.displayHeight / 2);
-    this.body.setVelocity(velocity.x, velocity.y);
+    const pose = this.riding ? 'rider' : this.texture.key.split('-').pop();
+    this.resize(`${this.look}-${pose}`, this.riding ? this.ridingSize : this.footSize);
   }
 
   get footSize() {
-    const k = this.big ? PLAYER.bigScale : 1;
-    return { w: SIZE.foot.w * k, h: SIZE.foot.h * k };
+    return this.big ? SIZE.bigFoot : SIZE.foot;
+  }
+
+  get ridingSize() {
+    return this.big ? SIZE.bigRiding : SIZE.riding;
   }
 
   mount() {
     if (this.riding || this.dead) return;
     this.riding = true;
-    this.resize(`${this.look}-rider`, SIZE.riding);
+    this.resize(`${this.look}-rider`, this.ridingSize);
   }
 
   dismount() {
