@@ -222,6 +222,20 @@ def goal():
     p.save(os.path.join(OUT, 'goal-pole.png'))
 
 
+def air_puffs():
+    """Air squeezed out of the ride duck: three frames of a little cloud growing, 16x14 each."""
+    PUFF = ['#9a96b6', '#cfd8ec', '#fdfefd']
+    c = Canvas(48, 14)
+    for i, (rx, ry) in enumerate([(3, 2.5), (5, 4), (7, 5.5)]):
+        cx, cy = i * 16 + 8, 7
+        m = c.ellipse_mask(cx, cy + 0.5, rx, ry) | c.ellipse_mask(cx - rx * 0.45, cy - ry * 0.35, rx * 0.6, ry * 0.7)
+        if i == 2:
+            m |= c.ellipse_mask(cx + rx * 0.5, cy - ry * 0.3, rx * 0.5, ry * 0.6)
+        c.shade(m, cx, cy, rx, ry, PUFF, cuts=(-0.35, 0.35))
+    c.outline()
+    c.save(os.path.join(OUT, 'air-puff.png'))
+
+
 # ---------- ride duck ----------
 
 def duck_big():
@@ -448,5 +462,5 @@ def backgrounds():
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    tiles(); mango(); egg(); hearts(); goal(); duck_big(); backgrounds()
+    tiles(); mango(); egg(); hearts(); goal(); air_puffs(); duck_big(); backgrounds()
     print('saved to', os.path.normpath(OUT))

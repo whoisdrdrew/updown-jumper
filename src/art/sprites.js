@@ -19,6 +19,7 @@ import heartEmpty from './world/heart-empty.png';
 import brickPiece from './world/brick-piece.png';
 import goalFlag from './world/goal-flag.png';
 import goalPole from './world/goal-pole.png';
+import airPuff from './world/air-puff.png';
 
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
@@ -51,6 +52,8 @@ export function preloadSprites(scene) {
   scene.load.image('brick-piece', brickPiece);
   scene.load.image('goal-flag', goalFlag);
   scene.load.image('goal-pole', goalPole);
+  // Air the ride duck squeezes out (player/DuckPuffs.js): three frames of a growing puff.
+  scene.load.spritesheet('air-puff', airPuff, { frameWidth: 16, frameHeight: 14 });
 }
 
 // Everything is drawn at twice the world resolution and shown at half size.

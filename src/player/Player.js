@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
 import { HERO_SCALE } from '../art/sprites.js';
+import DuckPuffs from './DuckPuffs.js';
 
 // Hitbox sizes on foot and riding the big duck.
 const SIZE = { foot: { w: PLAYER.width, h: PLAYER.height }, riding: { w: 20, h: 28 } };
@@ -30,6 +31,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.dead = false;
     this.safeUntil = 0;
     this.steerLockedUntil = 0;
+    this.puffs = new DuckPuffs(scene);
   }
 
   get facing() {
@@ -81,6 +83,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (canJump && buffered) {
       const boost = this.riding ? RIDE_DUCK.jumpBoost : 1;
       body.setVelocityY(-(PLAYER.jumpSpeed + Math.abs(vx) * PLAYER.runJumpBonus) * boost);
+      if (this.riding) this.puffs.jump(this);
       this.lastGroundedAt = -Infinity;
       this.jumpPressedAt = -Infinity;
     }
@@ -141,6 +144,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   // Mario-style death: pop up and fall through the floor.
   die() {
     this.dead = true;
+    this.setAngle(0);
     this.body.checkCollision.none = true;
     this.setCollideWorldBounds(false);
     this.body.setGravityY(0);
@@ -171,6 +175,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   dismount() {
     if (!this.riding) return;
     this.riding = false;
+    this.setAngle(0);
     const { x } = this;
     const bottom = this.body.bottom;
     this.resize(`${this.look}-idle`, SIZE.foot);
@@ -187,9 +192,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.setOffset((this.width - w) / 2, this.height - h);
   }
 
-  // Run, jump and stand poses (riding uses one picture for now).
+  // Run, jump and stand poses. Riding uses one picture, with the duck's air puffs and waddle.
   animate(time, onGround) {
-    if (this.riding) return;
+    if (this.riding) return this.puffs.update(time, this, onGround);
     let pose = 'idle';
     if (!onGround) pose = 'jump';
     else if (Math.abs(this.body.velocity.x) > 10) {
