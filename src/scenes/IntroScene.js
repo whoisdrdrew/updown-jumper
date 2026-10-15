@@ -163,7 +163,7 @@ export default class IntroScene extends Phaser.Scene {
     await this.say('boris', 'BORIS', 'Do you know where Ginger is?');
     this.tweens.add({ targets: horse, x: horse.x + 1, duration: 60, yoyo: true, repeat: 5 });
     await this.say('horse', 'HORSE', "I can't speak. I'm a horse.");
-    await this.say('boris', 'BORIS', 'Damn.');
+    await this.say('boris', 'BORIS', 'Right, forgot about that.');
 
     // He notices the note and picks it up.
     const exclaim = this.add.image(player.x, player.y - 16, 'intro-exclaim').setOrigin(0.5, 1).setScale(INTRO_SCALE);
@@ -185,7 +185,7 @@ export default class IntroScene extends Phaser.Scene {
     const steam = this.time.addEvent({ delay: 220, loop: true, callback: () => this.steamPuff(angry) });
     this.steamPuff(angry);
     await this.wait(900);
-    await this.say('boris-angry', 'BORIS', "Now you're on my list, my friend.");
+    await this.say('boris-angry', 'BORIS', "Now you're on MY list, my friend.");
     steam.remove();
 
     // Storms out of frame, and level 1 begins.
