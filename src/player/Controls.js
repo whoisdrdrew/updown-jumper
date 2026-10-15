@@ -23,9 +23,9 @@ export default class Controls {
 
   left() { return this.leftKey.isDown || touch.left; }
   right() { return this.rightKey.isDown || touch.right; }
-  down() { return this.downKey.isDown || touch.down; }
-  // The up arrow, up on the cross and the JUMP button all jump.
-  jump() { return this.jumpKey.isDown || touch.jump || touch.up; }
+  down() { return this.downKey.isDown; }
+  // The up arrow and the A button jump.
+  jump() { return this.jumpKey.isDown || touch.jump; }
   jumpJustPressed() { return this.consume('jumpQueued') | consumeTouch('jumpQueued'); }
   run() { return this.actionKey.isDown || touch.action; }
   shootJustPressed() { return this.consume('shootQueued') | consumeTouch('shootQueued'); }

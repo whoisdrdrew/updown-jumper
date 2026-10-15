@@ -1,4 +1,4 @@
-// On-screen controls for phones and tablets, NES style: a cross on the left, B (shoot, hold to run)
+// On-screen controls for phones and tablets, NES style: a left/right rocker on the left, B (shoot, hold to run)
 // and A (jump) on the right, see-through on top of the brick floor of a full-screen game. Computers with a mouse never see them. Phones play sideways only.
 //
 // The buttons only set flags in `touch`; Controls.js reads them next to the keyboard, so the
@@ -8,8 +8,6 @@ export const touch = {
   enabled: false,
   left: false,
   right: false,
-  up: false,
-  down: false,
   jump: false,
   action: false,
   // Presses remembered until the game reads them, so a quick tap is never lost.
@@ -37,23 +35,15 @@ const CSS = `
     box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
   #touch .pad, #touch .btn { pointer-events: auto; }
   /* NES look, after Sandro's reference: black cross in a grey frame, red B and A on a grey pill. */
-  #touch .pad { position: relative; height: 85%; aspect-ratio: 1; }
-  #touch .pad .frame { position: absolute; background: #8e8790; border: 2px solid #150b22; border-radius: 10px; }
-  #touch .pad .frame.h { left: 0; right: 0; top: 30%; height: 40%; }
-  #touch .pad .frame.v { top: 0; bottom: 0; left: 30%; width: 40%; }
-  #touch .pad .frame.c { left: 30%; top: 30%; width: 40%; height: 40%; border: 0; border-radius: 0; }
-  #touch .pad .arm { position: absolute; background: #221533; box-shadow: inset 0 3px 0 #30233f, inset 0 -3px 0 #0e0413; }
-  #touch .pad .arm.h { left: 5%; right: 5%; top: 35%; height: 30%; border-radius: 6px; }
-  #touch .pad .arm.v { top: 5%; bottom: 5%; left: 35%; width: 30%; border-radius: 6px; }
-  #touch .pad .hub { position: absolute; left: 35%; top: 35%; width: 30%; height: 30%; background: #221533; }
-  #touch .pad .hub::after { content: ''; position: absolute; inset: 25%; border-radius: 50%; background: #0e0413; }
-  #touch .pad .arrow { position: absolute; width: 0; height: 0; border: 8px solid transparent; }
-  #touch .pad .a-up { left: 50%; top: 10%; transform: translateX(-50%); border-bottom: 11px solid #0e0413; border-top: 0; }
-  #touch .pad .a-down { left: 50%; bottom: 10%; transform: translateX(-50%); border-top: 11px solid #0e0413; border-bottom: 0; }
-  #touch .pad .a-left { top: 50%; left: 10%; transform: translateY(-50%); border-right: 11px solid #0e0413; border-left: 0; }
-  #touch .pad .a-right { top: 50%; right: 10%; transform: translateY(-50%); border-left: 11px solid #0e0413; border-right: 0; }
-  #touch .pad .a-up.on { border-bottom-color: #ffe680; }
-  #touch .pad .a-down.on { border-top-color: #ffe680; }
+  #touch .pad { position: relative; height: 52%; aspect-ratio: 2.2; margin-bottom: 4%; }
+  #touch .pad .frame { position: absolute; inset: 0; background: #8e8790; border: 2px solid #150b22; border-radius: 12px; }
+  #touch .pad .arm { position: absolute; inset: 9%; background: #221533; border-radius: 8px;
+    box-shadow: inset 0 3px 0 #30233f, inset 0 -3px 0 #0e0413; }
+  #touch .pad .hub { position: absolute; left: 50%; top: 50%; width: 14%; aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 50%; background: #0e0413; }
+  #touch .pad .arrow { position: absolute; top: 50%; width: 0; height: 0; border: 11px solid transparent; transform: translateY(-50%); }
+  #touch .pad .a-left { left: 14%; border-right: 15px solid #0e0413; border-left: 0; }
+  #touch .pad .a-right { right: 14%; border-left: 15px solid #0e0413; border-right: 0; }
   #touch .pad .a-left.on { border-right-color: #ffe680; }
   #touch .pad .a-right.on { border-left-color: #ffe680; }
   #touch .buttons { position: relative; height: 92%; aspect-ratio: 1.6; }
@@ -90,9 +80,8 @@ export function setupTouchControls(getGame) {
   bar.id = 'touch';
   bar.innerHTML = `
     <div class="pad" aria-label="Move">
-      <div class="frame h"></div><div class="frame v"></div><div class="frame c"></div>
-      <div class="arm h"></div><div class="arm v"></div><div class="hub"></div>
-      <div class="arrow a-up"></div><div class="arrow a-down"></div><div class="arrow a-left"></div><div class="arrow a-right"></div>
+      <div class="frame"></div><div class="arm"></div><div class="hub"></div>
+      <div class="arrow a-left"></div><div class="arrow a-right"></div>
     </div>
     <div class="buttons">
       <div class="pill"></div>
@@ -147,22 +136,16 @@ export function setupTouchControls(getGame) {
 }
 
 function releaseAll() {
-  Object.assign(touch, { left: false, right: false, up: false, down: false, jump: false, action: false });
+  Object.assign(touch, { left: false, right: false, jump: false, action: false });
   document.querySelectorAll('#touch .on').forEach((el) => el.classList.remove('on'));
 }
 
-// The cross works like a real one: the thumb can roll between directions without lifting.
+// Left/right rocker: the thumb can roll from one side to the other without lifting.
 function setupPad(pad) {
-  const arrows = {
-    up: pad.querySelector('.a-up'),
-    down: pad.querySelector('.a-down'),
-    left: pad.querySelector('.a-left'),
-    right: pad.querySelector('.a-right'),
-  };
+  const arrows = { left: pad.querySelector('.a-left'), right: pad.querySelector('.a-right') };
   let activeId = null;
 
   const set = (dirs) => {
-    if (dirs.up && !touch.up) touch.jumpQueued = true; // up on the cross jumps, like the up arrow
     for (const k of Object.keys(arrows)) {
       touch[k] = Boolean(dirs[k]);
       arrows[k].classList.toggle('on', touch[k]);
@@ -172,15 +155,7 @@ function setupPad(pad) {
   const fromPoint = (e) => {
     const r = pad.getBoundingClientRect();
     const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-    const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-    const dead = 0.25;
-    // Diagonals count when the thumb is clearly between two arms.
-    return {
-      left: dx < -dead && Math.abs(dx) > Math.abs(dy) * 0.5,
-      right: dx > dead && Math.abs(dx) > Math.abs(dy) * 0.5,
-      up: dy < -dead && Math.abs(dy) > Math.abs(dx) * 0.5,
-      down: dy > dead && Math.abs(dy) > Math.abs(dx) * 0.5,
-    };
+    return { left: dx < -0.12, right: dx > 0.12 };
   };
 
   pad.addEventListener('pointerdown', (e) => {
