@@ -21,7 +21,7 @@ const PORTRAIT = { cols: 9, rows: 7, cell: 16, left: 416 - 72, top: 26 };
 const CELL_COLOR = 0x221533;
 
 // The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
-// Press down at the music button for the boss's beat, at the timer button to start the 15 seconds
+// Jump on the music button for the boss's beat, on the timer button to start the 15 seconds
 // (after a yes/no popup); the gate opens and every duck you grab uncovers a piece of the portrait.
 // When time is up the ducks vanish and the whole portrait shows. Leave through the door (down).
 // Started by GameScene with { big, masked, played }; wakes GameScene with { ducks, played }.
@@ -47,9 +47,8 @@ export default class BonusScene extends Phaser.Scene {
     this.addPortrait();
     this.door = this.add.image(DOOR_X, FLOOR, 'vip-door-open').setOrigin(0.5, 1).setScale(BONUS_SCALE);
     this.time.delayedCall(400, () => this.state !== 'leaving' && this.door.setTexture('vip-door'));
-    this.musicButton = this.add.image(MUSIC_X, FLOOR, 'button-music').setOrigin(0.5, 1).setScale(BONUS_SCALE);
-    this.timerButton = this.add.image(TIMER_X, FLOOR, data.played ? 'button-timer-pressed' : 'button-timer')
-      .setOrigin(0.5, 1).setScale(BONUS_SCALE);
+    this.musicButton = this.addButton(MUSIC_X, 'button-music');
+    this.timerButton = this.addButton(TIMER_X, data.played ? 'button-timer-pressed' : 'button-timer');
     this.addGate(data.played);
     this.addHint();
 
@@ -58,6 +57,8 @@ export default class BonusScene extends Phaser.Scene {
     this.player.masked = !!data.masked;
     this.player.setBig(!!data.big);
     this.physics.add.collider(this.player, [this.floor, this.gate]);
+    // The buttons are solid, like Mario's switch blocks: land on one to press it.
+    this.physics.add.collider(this.player, [this.musicButton, this.timerButton], (_p, button) => this.landOn(button));
     this.physics.add.overlap(this.player, this.ducks, (_p, duck) => this.collect(duck));
 
     this.beat = new BossBeat(this.sound.context);
@@ -78,17 +79,35 @@ export default class BonusScene extends Phaser.Scene {
 
     player.update(time, delta);
     this.bounce();
+    // A real jump or stepping off makes the next landing press the button again (the hop doesn't).
+    const off = this.standingOn && Math.abs(player.x - this.standingOn.x) > this.standingOn.displayWidth / 2 + 4;
+    if (off || player.body.velocity.y < -BONUS.buttonBounce - 40) this.standingOn = null;
 
     const down = controls.downJustPressed();
     const onGround = player.body.blocked.down;
     const near = (x) => onGround && Math.abs(player.x - x) <= BONUS.doorReach;
-    const spot = [DOOR_X, MUSIC_X, TIMER_X].find(near);
-    this.hint.setVisible(spot !== undefined && (spot !== TIMER_X || this.state === 'ready'));
-    if (spot !== undefined) this.hint.setPosition(spot, FLOOR - (spot === DOOR_X ? 48 : 30) + this.hintBob);
-    if (!down || spot === undefined) return;
-    if (spot === DOOR_X) this.leave();
-    else if (spot === MUSIC_X) this.musicButton.setTexture(this.beat.toggle() ? 'button-music-pressed' : 'button-music');
-    else if (this.state === 'ready') this.openPopup();
+    const atDoor = near(DOOR_X);
+    this.hint.setVisible(atDoor);
+    if (atDoor) this.hint.setPosition(DOOR_X, FLOOR - 48 + this.hintBob);
+    if (down && atDoor) this.leave();
+  }
+
+  // A button on the floor, solid so you can stand on it.
+  addButton(x, texture) {
+    return this.physics.add.staticImage(x, FLOOR, texture).setOrigin(0.5, 1).setScale(BONUS_SCALE).refreshBody();
+  }
+
+  // Landing on top of a button presses it (from the side it is just a block): music on or off, or the timer question.
+  landOn(button) {
+    const body = this.player.body;
+    if (!body.touching.down || !button.body.touching.up || this.standingOn === button) return;
+    this.standingOn = button;
+    body.setVelocityY(-BONUS.buttonBounce); // a little hop off it, like a Mario P-switch
+    if (button === this.musicButton) {
+      button.setTexture(this.beat.toggle() ? 'button-music-pressed' : 'button-music');
+    } else if (this.state === 'ready') {
+      this.openPopup();
+    }
   }
 
   // The floor: carpet in the lobby, trampoline tiles in the big room.
@@ -169,7 +188,7 @@ export default class BonusScene extends Phaser.Scene {
     else this.tweens.add({ targets: this.gateArt, y: -FLOOR, duration: 600, ease: 'Quad.easeIn' });
   }
 
-  // A small bobbing arrow over the door or button you can use: press down.
+  // A small bobbing arrow over the door when you can use it: press down.
   addHint() {
     const g = this.make.graphics({}, false);
     g.fillStyle(0xffffff).fillTriangle(0, 0, 8, 0, 4, 5);

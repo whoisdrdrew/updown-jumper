@@ -98,5 +98,6 @@ export const BOSS = {
 export const BONUS = {
   timeLimit: 15, // seconds on the bonus clock: a clean run takes about 13.5, so getting all 63 is hard
   topReach: 6, // each trampoline bounce lifts your head this far into the top row of ducks
-  doorReach: 10, // stand this close to a door or button (horizontally) and press down to use it
+  buttonBounce: 180, // landing on a button gives this little hop
+  doorReach: 10, // stand this close to the door (horizontally) and press down to use it
 };
