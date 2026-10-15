@@ -124,6 +124,26 @@ def chandelier(c, cx, top=18):
             c.px(cx + k * 5, top + 70 + j + abs(k), '#fdfefd' if j == 0 else '#cfd8ec')
 
 
+COVERS = ['/mnt/project-files/intro/ref/cover-gravity.jpg', '/mnt/project-files/intro/ref/cover-purple-noise.jpg']
+COVER_X, COVER_YS, COVER = 496, (50, 110), 40      # two framed record sleeves above the vanity
+
+
+def vinyl_cover(path):
+    """A record sleeve from a real cover photo, shrunk to 40 x 40 and reduced to 10 flat colors, in a thin gold frame."""
+    from PIL import Image
+    im = Image.open(path).convert('RGB')
+    side = min(im.size)
+    im = im.crop(((im.width - side) // 2, (im.height - side) // 2, (im.width + side) // 2, (im.height + side) // 2))
+    im = im.resize((COVER, COVER), Image.LANCZOS).quantize(10, dither=Image.Dither.NONE).convert('RGB')
+    c = Canvas(COVER + 6, COVER + 6)
+    c.rect(0, 0, COVER + 6, COVER + 6, OUTLINE)
+    c.rect(1, 1, COVER + 4, COVER + 4, GILT[2]); c.rect(1, 1, COVER + 4, 1, GILT[3]); c.rect(1, 1, 1, COVER + 4, GILT[3])
+    c.rect(1, COVER + 4, COVER + 4, 1, GILT[1]); c.rect(COVER + 4, 1, 1, COVER + 4, GILT[1])
+    c.a[3:3 + COVER, 3:3 + COVER, :3] = np.array(im)
+    c.a[3:3 + COVER, 3:3 + COVER, 3] = 255
+    return c
+
+
 def bedroom():
     c = Canvas(W, H)
     ys, xs = np.mgrid[0:H, 0:W]
@@ -200,6 +220,12 @@ def bedroom():
     # Sunlight falling on the floor.
     beam = (ys >= FLOOR_Y + 2) & (xs >= wx - 20 - (ys - FLOOR_Y) * 0.9) & (xs <= wx + ww - (ys - FLOOR_Y) * 0.9) & ((xs + ys) % 2 == 0)
 
+    # Two of Boris's records framed on the wall.
+    for path, y in zip(COVERS, COVER_YS):
+        if os.path.exists(path):
+            cov = vinyl_cover(path)
+            c.paste(cov, COVER_X - 3, y - 3)
+            c.rect(COVER_X - 3, y + COVER + 3, COVER + 6, 1, CREAM[1])          # soft shadow under the frame
     # Vanity with a round gold mirror and flowers.
     vx, vw = 480, 64
     box(c, vx, FLOOR_Y - 44, vw, 6, CREAM[1:])
