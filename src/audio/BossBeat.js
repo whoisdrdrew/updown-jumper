@@ -1,19 +1,24 @@
 // A short melodic-house loop for the bonus room's music button, made with Web Audio so there are no
 // sound files: four-on-the-floor kick, off-beat hats, a rolling bass line and a dreamy chord stab.
 // It is our own placeholder in the spirit of the end boss's sets, not one of his tracks.
-const BPM = 122;
-const STEP = 60 / BPM / 4; // sixteenth notes
+// The menu's songs (src/audio/songs.js) are the same loop with other notes and tempos.
 const LOOKAHEAD = 0.12; // seconds of notes scheduled ahead
 
-// A minor: bass notes per sixteenth (0 = rest), and a chord every bar.
-const BASS = [45, 0, 0, 45, 0, 0, 52, 0, 45, 0, 0, 48, 0, 50, 0, 52];
-const CHORDS = [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]];
+// A minor: bass notes per sixteenth (0 = rest), and a chord every bar (stabs on the steps in `stabs`).
+export const BOSS_SONG = {
+  bpm: 122,
+  bass: [45, 0, 0, 45, 0, 0, 52, 0, 45, 0, 0, 48, 0, 50, 0, 52],
+  chords: [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]],
+  stabs: [0, 10],
+};
 
 const hz = (note) => 440 * 2 ** ((note - 69) / 12);
 
 export default class BossBeat {
-  constructor(context) {
+  constructor(context, song = BOSS_SONG) {
     this.ctx = context;
+    this.song = song;
+    this.stepTime = 60 / song.bpm / 4; // sixteenth notes
     this.playing = false;
   }
 
@@ -50,7 +55,7 @@ export default class BossBeat {
     while (this.nextTime < this.ctx.currentTime + LOOKAHEAD) {
       this.playStep(this.step, this.nextTime);
       this.step = (this.step + 1) % 64;
-      this.nextTime += STEP;
+      this.nextTime += this.stepTime;
     }
   }
 
@@ -59,8 +64,9 @@ export default class BossBeat {
     if (s % 4 === 0) this.kick(t);
     if (s % 4 === 2) this.hat(t, 0.5);
     if (s % 2 === 1) this.hat(t, 0.15);
-    if (BASS[s]) this.bass(hz(BASS[s]), t);
-    if (s === 0 || s === 10) CHORDS[Math.floor(step / 16)].forEach((n) => this.stab(hz(n), t));
+    const { bass, chords, stabs } = this.song;
+    if (bass[s]) this.bass(hz(bass[s]), t);
+    if (stabs.includes(s)) chords[Math.floor(step / 16)].forEach((n) => this.stab(hz(n), t));
   }
 
   kick(t) {
@@ -102,10 +108,10 @@ export default class BossBeat {
     filter.frequency.exponentialRampToValueAtTime(200, t + 0.15);
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0.25, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + STEP * 1.8);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + this.stepTime * 1.8);
     osc.connect(filter).connect(gain).connect(this.out);
     osc.start(t);
-    osc.stop(t + STEP * 2);
+    osc.stop(t + this.stepTime * 2);
   }
 
   stab(freq, t) {
