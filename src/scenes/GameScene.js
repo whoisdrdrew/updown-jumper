@@ -3,7 +3,7 @@ import { TILE } from '../config.js';
 import Player from '../player/Player.js';
 import Controls from '../player/Controls.js';
 import RubberDucks from '../player/RubberDucks.js';
-import Mangos from '../objects/Mangos.js';
+import Securities from '../objects/Securities.js';
 import RideDucks from '../objects/RideDucks.js';
 import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
@@ -11,7 +11,7 @@ import Suitcase from '../objects/Suitcase.js';
 import Boss from '../objects/Boss.js';
 import takeWinnerPhoto from '../objects/WinnerPhoto.js';
 import { addExitButton, preloadExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
-import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS } from '../config.js';
+import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS, SECURITY } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
 import { createBackground, preloadBackground } from '../art/background.js';
@@ -48,7 +48,7 @@ export default class GameScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createSprites(this);
-    const { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt, vipDoor } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -66,7 +66,7 @@ export default class GameScene extends Phaser.Scene {
     this.player = new Player(this, start.x, start.y, this.controls);
     this.blocks = new Blocks(this, layer, view, blockContents);
     this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
-    this.addItems(layer, mangos, eggs, pickups);
+    this.addItems(layer, guards, eggs, pickups);
     if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
 
     this.addGoal(goal);
@@ -98,17 +98,17 @@ export default class GameScene extends Phaser.Scene {
     this.shots.update();
     this.rideDucks.update();
     this.burgers.update();
-    this.mangos.update();
+    this.securities.update();
     if (this.boss?.active) this.boss.update(time);
     if (this.player.y > this.worldH + 32) this.respawn();
   }
 
-  // Rubber-duck shots, mangos and the ride-on duck, and how they touch each other.
-  addItems(layer, mangoPositions, eggPositions, pickupPositions) {
+  // Rubber-duck shots, security bouncers and the ride-on duck, and how they touch each other.
+  addItems(layer, guardPositions, eggPositions, pickupPositions) {
     const player = this.player;
     this.shots = new RubberDucks(this, layer);
     player.shots = this.shots;
-    this.mangos = new Mangos(this, mangoPositions, layer);
+    this.securities = new Securities(this, guardPositions, layer);
     this.rideDucks = new RideDucks(this, layer, eggPositions);
     this.burgers = new Burgers(this, layer);
 
@@ -122,13 +122,20 @@ export default class GameScene extends Phaser.Scene {
       if (!player.dead && this.burgers.eat(burger)) player.growBig();
     });
 
-    this.physics.add.overlap(player, this.mangos.group, (_p, mango) => {
+    // Jump on a bouncer's head to knock him out; walk into him and he shoves you back.
+    this.physics.add.overlap(player, this.securities.group, (_p, guard) => {
+      if (player.dead) return;
+      if (this.securities.isStomp(player, guard)) {
+        this.securities.stomp(guard);
+        player.body.setVelocityY(-SECURITY.stompBounce);
+        return;
+      }
       if (player.invulnerable) return;
-      this.mangos.squash(mango);
-      player.slipOnMango();
+      this.securities.shoved(guard, player.x);
+      player.shovedFrom(guard.x);
     });
-    this.physics.add.overlap(this.shots.group, this.mangos.group, (shot, mango) => {
-      this.mangos.knockAway(mango, shot.dir);
+    this.physics.add.overlap(this.shots.group, this.securities.group, (shot, guard) => {
+      this.securities.knockAway(guard, shot.dir);
       this.shots.pop(shot);
     });
 
@@ -229,7 +236,7 @@ export default class GameScene extends Phaser.Scene {
     const width = Math.max(...rows.map((r) => r.length));
     let start = { x: TILE * 2, y: 0 };
     let goal = null;
-    const mangos = [];
+    const guards = [];
     const eggs = [];
     const pickups = [];
     let suitcase = null;
@@ -241,7 +248,7 @@ export default class GameScene extends Phaser.Scene {
       [...row.padEnd(width, ' ')].map((ch, x) => {
         if (ch === 'P') start = { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 };
         if (ch === 'F') goal = { x: x * TILE + TILE / 2, y: y * TILE };
-        if (ch === 'M') mangos.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
+        if (ch === 'G') guards.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
         if (ch === 'S') suitcase = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
         if (ch === 'K') bossAt = { x: x * TILE + TILE / 2, y: y * TILE };
@@ -277,7 +284,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.children.remove(layer); // re-added after the background so it draws on top
     this.children.remove(view);
-    return { map, layer, view, start, goal, mangos, eggs, pickups, blockContents, suitcase, bossAt, vipDoor };
+    return { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor };
   }
 
   addGoal(goal) {

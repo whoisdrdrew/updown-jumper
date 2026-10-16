@@ -19,7 +19,9 @@ import duckSmall from './duck/small.png';
 import caseClosed from './suitcase/closed.png';
 import caseMask from './suitcase/mask.png';
 import caseOpen from './suitcase/open.png';
-import mango from './world/mango.png';
+import securityWalk0 from './security/walk-0.png';
+import securityWalk1 from './security/walk-1.png';
+import securityKnocked from './security/knocked.png';
 import egg from './world/egg.png';
 import eggHalf from './world/egg-half.png';
 import burger from './world/burger.png';
@@ -75,7 +77,9 @@ export function preloadSprites(scene) {
   scene.load.image('case-mask', caseMask);
   scene.load.image('case-open', caseOpen);
   // Items, drawn at the hero's pixel size by tools/world_art.py. Shown at ITEM_SCALE like the hero.
-  scene.load.image('mango', mango);
+  scene.load.image('security-walk-0', securityWalk0);
+  scene.load.image('security-walk-1', securityWalk1);
+  scene.load.image('security-knocked', securityKnocked);
   scene.load.image('egg', egg);
   scene.load.image('egg-half', eggHalf);
   // The burger power-up and the box it pops out of (art/powerups/ in the project files).

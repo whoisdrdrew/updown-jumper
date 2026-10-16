@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PHYSICS, PLAYER, MANGO, RIDE_DUCK } from '../config.js';
+import { PHYSICS, PLAYER, SECURITY, RIDE_DUCK } from '../config.js';
 import { HERO_SCALE } from '../art/sprites.js';
 import DuckPuffs from './DuckPuffs.js';
 
@@ -25,7 +25,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.fitBody(SIZE.foot);
     this.body.setMaxVelocityY(PLAYER.maxFallSpeed);
     this.setCollideWorldBounds(true);
-    // In front of the suitcase, mangos, eggs and air puffs (which are made later or sit at depth 1).
+    // In front of the suitcase, bouncers, eggs and air puffs (which are made later or sit at depth 1).
     this.setDepth(2);
 
     this.lastGroundedAt = -Infinity;
@@ -115,16 +115,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.emit('ammo', this.ammo);
   }
 
-  // Stepped on a mango: slip forward. Riding, the duck runs off; on foot, it costs a hit.
-  slipOnMango() {
+  // Walked into a security bouncer: he shoves you back, away from him. Riding, the duck runs off;
+  // on foot, it costs a hit.
+  shovedFrom(x) {
     if (this.invulnerable) return;
-    const dir = this.facing;
-    this.body.setVelocity(dir * MANGO.slipSpeed, -MANGO.slipHop);
-    this.steerLockedUntil = this.scene.time.now + MANGO.slipLockMs;
+    const dir = this.x < x ? -1 : 1;
+    this.body.setVelocity(dir * SECURITY.shoveSpeed, -SECURITY.shoveHop);
+    this.steerLockedUntil = this.scene.time.now + SECURITY.shoveLockMs;
     this.takeHit();
   }
 
-  // Any hit (mango, later enemies and bosses).
+  // Any hit (a bouncer, the boss).
   takeHit() {
     if (this.invulnerable) return;
     if (this.riding) {

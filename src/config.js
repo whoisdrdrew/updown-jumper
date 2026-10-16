@@ -36,7 +36,7 @@ export const PLAYER = {
   // will change this in a later milestone; it starts at 'ducks' for now so shooting can be tried.
   startPower: 'ducks',
 
-  maxHits: 2, // the second mango slip (or other hit) loses a life
+  maxHits: 2, // the second hit (a bouncer's shove or worse) loses a life
   startAmmo: 0, // rubber ducks to shoot at the start; collect more in the level
   bigHeight: 26, // hitbox height after eating a burger (big Boris is about 1.3x as tall)
   blinkMs: 1500, // after a hit the player blinks and can't be hurt again for this long
@@ -51,11 +51,14 @@ export const SHOT = {
   maxOnScreen: 2, // like Mario, only two at a time
 };
 
-export const MANGO = {
-  rollSpeed: 32, // they roll along the floor this fast, Goomba pace
-  slipSpeed: 170, // the player shoots forward when slipping...
-  slipHop: 140, // ...with a small hop
-  slipLockMs: 350, // and can't steer for a moment
+export const SECURITY = {
+  walkSpeed: 26, // the bouncers pace along the floor this fast, Goomba pace
+  stepMs: 200, // walk frame swap
+  shoveSpeed: 190, // walking into one shoves the player back this fast...
+  shoveHop: 150, // ...with a small hop
+  shoveLockMs: 350, // and they can't steer for a moment
+  shovePauseMs: 600, // the bouncer stands his ground that long after a shove
+  stompBounce: 240, // the player bounces off his head this fast
 };
 
 // The big duck you hatch from an egg and ride, like Yoshi.
