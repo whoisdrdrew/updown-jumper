@@ -40,10 +40,12 @@ RED = ['#7a1020', '#c0203a', '#f04a5a']
 CARD = ['#bdbaba', '#dcdada', '#f4f3f1', '#fdfefd']
 DULL = ['#5a5560', '#77727c', '#8e8994', '#a29ea6']
 
-MONITOR_SCREEN = (256, 150, 128, 44)       # x, y, w, h of the big wall display: the game writes its hint here
-TITLE_PANEL = (268, 64, 103, 69)           # the panel pair above the wall display: room for the game title
+MONITOR_SCREEN = (293, 224, 54, 26)        # x, y, w, h of the monitor's screen on the desk
+HINT_AREA = (252, 146, 136, 52)            # free wall between the panels, under the title: room for the level hint
+TITLE_PANEL = (268, 64, 103, 69)           # the panel pair above the desk: room for the game title
 FURNITURE_FOOT = 300                       # desk, speakers and chair stand on Boris's line (his feet at y=300)
-DESK_HEIGHT = 30                           # desk top this far above the feet: Boris's hip
+DESK_HEIGHT = 38                           # desk top this far above the feet
+DESK_X0, DESK_X1 = 250, 390
 BORIS_SPOT = (300, 300)                    # feet x, y: standing at the desk
 
 # ---------- the cards ----------
@@ -197,31 +199,31 @@ def bass_trap(c, x0, x1, light_from_right):
 
 
 def speaker(c, x0, y0, foot_y):
-    """A studio monitor on a light wooden stand: woofer below, ribbon tweeter on top, scaled to Boris."""
-    cw, ch = 22, 28
+    """A studio monitor on a light wooden stand: woofer below, ribbon tweeter on top."""
+    cw, ch = 31, 39
     cx = x0 + cw // 2
     # Stand: two light wooden posts with cross bars, a foot plate on the floor.
-    for x in (cx - 6, cx + 3):
-        box(c, x, y0 + ch, 3, foot_y - 3 - (y0 + ch), OAK[1:])
-    box(c, cx - 6, y0 + ch, 12, 3, OAK[1:])
-    box(c, cx - 6, y0 + ch + 16, 12, 2, OAK[1:])
-    box(c, cx - 9, foot_y - 3, 18, 3, OAK[1:])
+    for x in (cx - 8, cx + 4):
+        box(c, x, y0 + ch, 4, foot_y - 3 - (y0 + ch), OAK[1:])
+    box(c, cx - 8, y0 + ch, 16, 3, OAK[1:])
+    box(c, cx - 8, y0 + ch + 16, 16, 2, OAK[1:])
+    box(c, cx - 11, foot_y - 3, 22, 3, OAK[1:])
     # Cabinet.
     box(c, x0, y0, cw, ch, DESK[1:])
     ys, xs = np.mgrid[0:c.h, 0:c.w]
-    wx, wy = cx, y0 + 19
+    wx, wy = cx + .5, y0 + 26.5
     r = ((xs + .5 - wx) ** 2 + (ys + .5 - wy) ** 2) ** .5
-    put(c, r < 6, SILVER[1]); put(c, (r < 6) & (xs + ys < wx + wy - 3), SILVER[2])
-    put(c, r < 4.5, DESK[0]); put(c, (r < 4.5) & (r >= 3.5) & (xs + ys < wx + wy), DESK[2])
-    put(c, r < 1.5, SILVER[2])
-    outline_of(c, r < 6)
+    put(c, r < 8.5, SILVER[1]); put(c, (r < 8.5) & (xs + ys < wx + wy - 4), SILVER[2])
+    put(c, r < 6.5, DESK[0]); put(c, (r < 6.5) & (r >= 5) & (xs + ys < wx + wy), DESK[2])
+    put(c, r < 2, SILVER[1]); put(c, (r < 1.2), SILVER[3])
+    outline_of(c, r < 8.5)
     # Ribbon tweeter.
-    c.rect(cx - 4, y0 + 4, 8, 7, SILVER[1]); c.rect(cx - 4, y0 + 4, 8, 1, SILVER[3])
-    c.rect(cx - 2, y0 + 6, 4, 4, DESK[0])
-    for y in (y0 + 6, y0 + 8):
-        c.rect(cx - 2, y, 4, 1, GILT[2])
-    frame(c, cx - 5, y0 + 3, 10, 9, OUTLINE)
-    c.px(x0 + 3, y0 + ch - 4, LED[2])                   # power light
+    c.rect(cx - 5, y0 + 5, 11, 10, SILVER[1]); c.rect(cx - 5, y0 + 5, 11, 1, SILVER[3])
+    c.rect(cx - 3, y0 + 7, 7, 6, DESK[0])
+    for y in (y0 + 8, y0 + 10):
+        c.rect(cx - 2, y, 5, 1, GILT[2])
+    frame(c, cx - 6, y0 + 4, 13, 12, OUTLINE)
+    c.rect(x0 + 3, y0 + ch - 5, 2, 1, LED[2])           # power light
 
 
 def daw_screen(c, x, y, w, h):
@@ -341,42 +343,38 @@ def studio():
     joint = floor & (row != np.roll(row, 1, 0))
     put(c, floor & seam, WOOD[1]); put(c, joint, WOOD[1])
     c.rect(0, FLOOR_Y - 3, W, 3, DESK[2]); c.rect(0, FLOOR_Y - 3, W, 1, DESK[3]); c.rect(0, FLOOR_Y, W, 1, OUTLINE)   # skirting
-    # The wall display: a big screen on the wall with the DAW (the game writes its hint here).
-    sx, sy, sw, sh = MONITOR_SCREEN
-    c.rect(sx - 4, sy + sh + 4, sw + 8, 2, PLASTER[0])
-    box(c, sx - 6, sy - 4, sw + 12, sh + 8, DESK[1:])
-    daw_screen(c, sx, sy, sw, sh)
-    c.rect(sx, sy, 20, 1, '#5a6890')
     # Everything on the floor stands on Boris's line: feet at FURNITURE_FOOT.
     fy = FURNITURE_FOOT
-    pool = floor & ((((xs - 320) / 70) ** 2 + ((ys - (fy - 6)) / 8) ** 2) < 1)
-    core = floor & ((((xs - 320) / 52) ** 2 + ((ys - (fy - 7)) / 5) ** 2) < 1)
+    pool = floor & ((((xs - 320) / 84) ** 2 + ((ys - (fy - 6)) / 9) ** 2) < 1)
+    core = floor & ((((xs - 320) / 64) ** 2 + ((ys - (fy - 7)) / 6) ** 2) < 1)
     put(c, pool & ~core & ((xs + ys) % 2 == 0) & ~seam, WOOD[4]); put(c, core & ~seam, WOOD[4])
-    speaker(c, 224, fy - 62, fy)
-    speaker(c, 394, fy - 62, fy)
-    # The desk: black top at Boris's hip, thin front edge, warm LED strip under it, slim legs.
-    dx0, dx1, top = 264, 376, fy - DESK_HEIGHT
-    for lx in (dx0 + 6, dx1 - 10):
-        box(c, lx, top + 7, 4, fy - (top + 7), DESK[1:])
-    box(c, dx0, top, dx1 - dx0, 4, [DESK[1], DESK[2], DESK[3]])
-    c.rect(dx0, top + 4, dx1 - dx0, 3, DESK[1]); c.rect(dx0, top + 6, dx1 - dx0, 1, DESK[0])
-    c.rect(dx0 + 2, top + 7, dx1 - dx0 - 4, 1, LED[2])
-    frame(c, dx0 - 1, top - 1, dx1 - dx0 + 2, 9, OUTLINE)
-    # Monitor on the desk, with the same DAW.
-    box(c, 317, top - 7, 6, 7, DESK[1:]); box(c, 310, top - 2, 20, 2, DESK[1:])
-    box(c, 296, top - 32, 48, 26, DESK[1:])
-    daw_screen(c, 299, top - 29, 42, 20)
+    speaker(c, 211, fy - 73, fy)
+    speaker(c, 398, fy - 73, fy)
+    # The desk: black top, thin front edge, warm LED strip under it, slim legs.
+    dx0, dx1, top = DESK_X0, DESK_X1, fy - DESK_HEIGHT
+    for lx in (dx0 + 7, dx1 - 12):
+        box(c, lx, top + 9, 5, fy - (top + 9), DESK[1:])
+    box(c, dx0, top, dx1 - dx0, 5, [DESK[1], DESK[2], DESK[3]])
+    c.rect(dx0, top + 5, dx1 - dx0, 4, DESK[1]); c.rect(dx0, top + 8, dx1 - dx0, 1, DESK[0])
+    c.rect(dx0 + 2, top + 9, dx1 - dx0 - 4, 1, LED[2])
+    frame(c, dx0 - 1, top - 1, dx1 - dx0 + 2, 11, OUTLINE)
+    # Monitor on the desk, with the DAW (MONITOR_SCREEN).
+    sx, sy, sw, sh = MONITOR_SCREEN
+    box(c, 316, top - 9, 8, 9, DESK[1:]); box(c, 307, top - 2, 26, 2, DESK[1:])
+    box(c, sx - 3, sy - 3, sw + 6, sh + 6, DESK[1:])
+    daw_screen(c, sx, sy, sw, sh)
+    c.rect(sx, sy, 8, 1, '#5a6890')
     # Keyboard (red, like the photo), controller, mouse, headphones.
-    box(c, 276, top, 32, 3, RED, outline=False)
-    c.rect(277, top + 1, 30, 1, '#fdfefd')
-    for k in range(278, 307, 3):
-        c.px(k, top + 1, DESK[0])
-    frame(c, 275, top - 1, 34, 5, OUTLINE)
-    box(c, 332, top, 14, 3, SILVER[:3])
-    c.px(335, top + 1, '#3cae4a'); c.px(338, top + 1, '#f6a64a'); c.px(341, top + 1, '#e05a9a')
-    box(c, 352, top, 4, 2, DESK[1:])
-    headphones(c, 284 - 14, top - 1)
-    chair(c, 362, fy + 4)
+    box(c, 266, top + 1, 40, 3, RED, outline=False)
+    c.rect(267, top + 2, 38, 1, '#fdfefd')
+    for k in range(268, 305, 3):
+        c.px(k, top + 2, DESK[0])
+    frame(c, 265, top, 42, 5, OUTLINE)
+    box(c, 334, top + 1, 18, 3, SILVER[:3])
+    c.px(337, top + 2, '#3cae4a'); c.px(341, top + 2, '#f6a64a'); c.px(345, top + 2, '#e05a9a')
+    box(c, 360, top + 1, 5, 2, DESK[1:])
+    headphones(c, 256, top)
+    chair(c, 374, fy + 4)
     return c
 
 
