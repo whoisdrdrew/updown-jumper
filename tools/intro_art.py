@@ -465,6 +465,7 @@ def outside():
 BRICK = ['#8e7a62', '#b8a488', '#d8c8a8', '#ece2c8']
 MORTAR = '#c8baa0'
 OAK = ['#6a3e1a', '#a8682a', '#d08e40', '#ecb860']
+STALL = ['#b88a58', '#d4aa78', '#e8c896']                       # light wood inside a stall
 IRON = ['#1e1210', '#3a2418', '#5a3a24']
 PLASTER = ['#cfcdcd', '#e4e2e0', '#f6f4f0', '#fdfefd']
 COBBLE = ['#8e887e', '#b0aa9e', '#cec8bc', '#e4dfd4']
@@ -491,20 +492,26 @@ def stall_front(c, x0, x1, open_):
     swoop = top_lo - 34 * (np.abs(u - 0.5) * 2) ** 2.2
     bars = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < bars_bot)
     if open_:
-        # Inside the open stall: shadowy wood and hay; the door is swung against the right post.
-        # Above the door height the white back wall shows through the bars, as on every stall.
-        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= door_top) & (ys < FLOOR_Y)
-        shade_mask(c, inside, [IRON[2], IRON[1], IRON[0]], np.clip((ys - door_top) / 60, 0, 0.99))
+        # Inside the open stall: one warm light-brown plank wall from the top of the posts to the floor,
+        # with straw on the floor. The bars belong to the door, so they swing away with it.
+        top = 160
+        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= top) & (ys < FLOOR_Y)
+        put(c, inside, STALL[1])
+        put(c, inside & ((xs - x0) % 10 == 0), STALL[0])
+        put(c, inside & ((xs - x0) % 10 == 1), STALL[2])
+        put(c, inside & ((xs < x0 + 10) | (ys < top + 4)), STALL[0])        # shade under the top and the left side
+        c.rect(x0 + 4, top, w - 8, 1, OUTLINE)
         hay = inside & (ys > FLOOR_Y - 18 + 4 * np.sin(xs / 5.0))
         put(c, hay, '#b8862e'); put(c, hay & ((xs * 3 + ys * 5) % 7 == 0), '#ecc860'); put(c, hay & ((xs + ys * 3) % 9 == 0), '#7a5420')
+        bars &= False
     put(c, bars & ((xs - x0) % 6 < 2), IRON[1])
     put(c, bars & ((xs - x0) % 6 == 0), IRON[2])
-    # The swoop rail and its lower rail.
-    for x in range(x0 + 2, x1 - 2):
+    # The swoop rail and its lower rail (part of the door, so not on an open stall).
+    for x in (range(x0 + 2, x1 - 2) if not open_ else ()):
         y = int(top_lo - 34 * (abs((x - x0) / w - 0.5) * 2) ** 2.2)
         c.rect(x, y - 3, 1, 4, IRON[1]); c.px(x, y - 3, IRON[2]); c.px(x, y - 4, OUTLINE); c.px(x, y + 1, OUTLINE)
-    c.rect(x0 + 2, bars_bot, w - 4, 3, IRON[1]); c.rect(x0 + 2, bars_bot, w - 4, 1, IRON[2])
     if not open_:
+        c.rect(x0 + 2, bars_bot, w - 4, 3, IRON[1]); c.rect(x0 + 2, bars_bot, w - 4, 1, IRON[2])
         dx0, dx1 = x0 + 4, x1 - 4
         box(c, dx0, door_top, dx1 - dx0, FLOOR_Y - door_top - 2, OAK[1:])
         # Planks and a diamond brace in the middle panel.
@@ -517,8 +524,11 @@ def stall_front(c, x0, x1, open_):
         c.rect(int(cx) - 8, door_top + 10, 16, 3, IRON[1])            # name plate
         c.rect(dx1 - 6, door_top + 26, 3, 8, IRON[1])                 # latch
     else:
-        # The door swung open against the right post, seen edge-on as a thick plank.
-        box(c, x1 - 14, door_top, 8, FLOOR_Y - door_top - 2, OAK[1:])
+        # The door swung open against the right post, seen edge-on: its bars on top, the oak below.
+        ex = x1 - 14
+        box(c, ex, door_top, 8, FLOOR_Y - door_top - 2, OAK[1:])
+        box(c, ex + 2, top_lo - 34, 4, door_top - (top_lo - 34), IRON)
+        c.rect(ex, top_lo - 36, 8, 3, IRON[1]); c.rect(ex, top_lo - 37, 8, 1, OUTLINE)
     # Iron posts with ball finials at both ends of the stall front.
     for px_ in (x0, x1 - 5):
         box(c, px_, 158, 5, FLOOR_Y - 158, IRON)
@@ -547,7 +557,7 @@ def stable():
     put(c, (ys >= 108) & (ys < FLOOR_Y), PLASTER[1])
     put(c, (ys >= 220) & (ys < FLOOR_Y) & ((xs + ys) % 2 == 0), PLASTER[0])
     c.rect(0, 110, W, 5, OAK[1]); c.rect(0, 110, W, 1, OAK[3]); c.rect(0, 115, W, 1, OAK[0])
-    for x0, x1 in BAYS + [(30, 130)]:
+    for x0, x1 in BAYS:
         cx = (x0 + x1) // 2
         arch_win = ((xs >= cx - 13) & (xs < cx + 13) & (ys >= 138) & (ys < 172)) | (((xs + 0.5 - cx) / 13) ** 2 + ((ys + 0.5 - 138) / 12) ** 2 < 1)
         put(c, arch_win, '#b8d4ee'); put(c, arch_win & (ys < 146), '#d8e8f6')
@@ -556,7 +566,7 @@ def stable():
     # Brick arcade: an arch over each bay, pillars between.
     arcade = (ys >= 40) & (ys < FLOOR_Y)
     opening = np.zeros((H, W), bool)
-    for x0, x1 in BAYS + [(30, 130)]:
+    for x0, x1 in BAYS:
         cx, r = (x0 + x1) / 2, (x1 - x0) / 2 - 10
         spring = 112
         opening |= (xs > x0 + 10) & (xs < x1 - 10) & (ys > spring) & (ys < FLOOR_Y)
@@ -566,7 +576,7 @@ def stable():
     # Arch rims (a soldier course of lighter brick) and pillar shading.
     rim = wall & ~(np.roll(wall, 3, 0) & np.roll(wall, 3, 1) & np.roll(wall, -3, 1))
     put(c, rim, BRICK[3]); outline_of(c, opening & ~(ys >= FLOOR_Y - 1))
-    for x0, x1 in BAYS + [(30, 130)]:
+    for x0, x1 in BAYS:
         put(c, wall & (xs >= x1 - 10) & (xs < x1 - 7) & (ys > 112), BRICK[1])
     # A cornice line along the top of the arcade and little wall lamps on each pillar.
     c.rect(0, 40, W, 3, BRICK[3]); c.rect(0, 43, W, 1, BRICK[0]); c.rect(0, 39, W, 1, OUTLINE)
