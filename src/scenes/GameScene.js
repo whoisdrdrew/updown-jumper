@@ -71,6 +71,7 @@ export default class GameScene extends Phaser.Scene {
     this.addHeadSecurity(layer, chiefs);
     if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
 
+    this.goalX = undefined;
     this.addGoal(goal);
     if (vipDoor) this.vipDoor = this.add.image(vipDoor.x, vipDoor.y, 'vip-door').setOrigin(0.5, 1).setScale(BONUS_SCALE).setDepth(1);
     this.bonusPlayed = false;
@@ -103,6 +104,7 @@ export default class GameScene extends Phaser.Scene {
     this.securities.update();
     this.headSecurity.update();
     if (this.boss?.active) this.boss.update(time);
+    if (this.goalX !== undefined && this.player.body.right >= this.goalX && !this.player.dead) return this.levelClear();
     if (this.player.y > this.worldH + 32) this.respawn();
   }
 
@@ -321,9 +323,9 @@ export default class GameScene extends Phaser.Scene {
     this.add.tileSprite(goal.x, goal.y + 2, 6, (poleH - 2) / ITEM_SCALE, 'goal-pole').setOrigin(0.5, 0).setScale(ITEM_SCALE);
     this.add.image(goal.x - 2, goal.y - 2, 'goal-flag').setOrigin(0, 0).setScale(ITEM_SCALE);
 
-    const zone = this.add.zone(goal.x, goal.y + poleH / 2, 10, poleH);
-    this.physics.add.existing(zone, true);
-    this.physics.add.overlap(this.player, zone, () => this.levelClear());
+    // Reaching the flag ends the level: touching the pole, or getting past it at any height (even
+    // jumping right over it).
+    this.goalX = goal.x - 3;
   }
 
   // The boss arena: one screen wide, centred on the K in the level. Walking in shuts it, like the
@@ -446,8 +448,7 @@ export default class GameScene extends Phaser.Scene {
   levelClear() {
     if (this.finished) return;
     this.finished = true;
-    this.player.body.setVelocity(0, 0);
-    this.player.body.setAllowGravity(false);
+    this.player.body.setVelocityX(0); // and if he jumped over the flag, he comes down to the ground
     this.banner('LEVEL CLEAR!');
     // Saved with its winner photo; the home screen hangs the photo on the level's card.
     markLevelDone(this.level, this.winnerPhoto && shrinkPhoto(this.winnerPhoto));
