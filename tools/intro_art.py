@@ -465,7 +465,6 @@ def outside():
 BRICK = ['#8e7a62', '#b8a488', '#d8c8a8', '#ece2c8']
 MORTAR = '#c8baa0'
 OAK = ['#6a3e1a', '#a8682a', '#d08e40', '#ecb860']
-STALL = ['#b88a58', '#d4aa78', '#e8c896']                       # light wood inside a stall
 IRON = ['#1e1210', '#3a2418', '#5a3a24']
 PLASTER = ['#cfcdcd', '#e4e2e0', '#f6f4f0', '#fdfefd']
 COBBLE = ['#8e887e', '#b0aa9e', '#cec8bc', '#e4dfd4']
@@ -492,15 +491,9 @@ def stall_front(c, x0, x1, open_):
     swoop = top_lo - 34 * (np.abs(u - 0.5) * 2) ** 2.2
     bars = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < bars_bot)
     if open_:
-        # Inside the open stall: one warm light-brown plank wall from the top of the posts to the floor,
-        # with straw on the floor. The bars belong to the door, so they swing away with it.
-        top = 160
-        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= top) & (ys < FLOOR_Y)
-        put(c, inside, STALL[1])
-        put(c, inside & ((xs - x0) % 10 == 0), STALL[0])
-        put(c, inside & ((xs - x0) % 10 == 1), STALL[2])
-        put(c, inside & ((xs < x0 + 10) | (ys < top + 4)), STALL[0])        # shade under the top and the left side
-        c.rect(x0 + 4, top, w - 8, 1, OUTLINE)
+        # The open stall shows the same white back wall as every other stall, with straw on the floor.
+        # The bars belong to the door, so they swing away with it.
+        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys < FLOOR_Y)
         hay = inside & (ys > FLOOR_Y - 18 + 4 * np.sin(xs / 5.0))
         put(c, hay, '#b8862e'); put(c, hay & ((xs * 3 + ys * 5) % 7 == 0), '#ecc860'); put(c, hay & ((xs + ys * 3) % 9 == 0), '#7a5420')
         bars &= False
