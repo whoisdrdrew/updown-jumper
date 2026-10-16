@@ -20,9 +20,10 @@ const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk
 // Left/right steps through these in order: the levels on the left string, the play button, the right
 // string, then the Afterparty ticket.
 const SLOTS = [1, 2, 3, 4, 5, 'music', 6, 7, 8, 9, 10, 'ticket'];
-// In the empty bottom halves of the two boards: the golden nugget counter (left) and the ticket (right).
-const NUGGET_ROW = { x: 148, y: 172, step: 16 }; // centre of the row of 10
-const TICKET_AT = { x: 492, y: 168 }; // centre
+// In the empty bottom half of the right board: the Afterparty ticket with the golden nugget counter
+// under it. (The left board's bottom half is kept for the special levels after the first 10.)
+const TICKET_AT = { x: 492, y: 157 }; // centre
+const NUGGET_ROW = { x: 474, y: 199, step: 14 }; // centre of the row of 10, the n/10 count to its right
 
 // The home screen and level menu: Boris's music studio. The 10 levels hang as instant photos on two
 // strings. Finished levels show their winner photo from Felix, the next level has a play arrow, and
@@ -209,13 +210,13 @@ export default class HomeScene extends Phaser.Scene {
     const won = nuggetCount();
     this.unlocked = won >= NUGGET_COUNT;
     const style = { fontFamily: FONT, fontSize: '8px', color: GOLD };
-    this.add.text(NUGGET_ROW.x, NUGGET_ROW.y - 18, 'GOLDEN NUGGETS', style).setOrigin(0.5).setDepth(2)
-      .setShadow(1, 1, '#12081c', 0, false, true);
     for (let level = 1; level <= NUGGET_COUNT; level++) {
       const x = NUGGET_ROW.x + (level - 1 - (NUGGET_COUNT - 1) / 2) * NUGGET_ROW.step;
       this.add.image(Math.round(x), NUGGET_ROW.y, hasNugget(level) ? 'nugget-icon' : 'nugget-slot').setDepth(2);
     }
-    this.add.text(NUGGET_ROW.x, NUGGET_ROW.y + 18, `${won}/${NUGGET_COUNT}`, { ...style, color: '#ffffff' }).setOrigin(0.5).setDepth(2);
+    const rowRight = NUGGET_ROW.x + (NUGGET_COUNT / 2) * NUGGET_ROW.step;
+    this.add.text(rowRight + 4, NUGGET_ROW.y + 1, `${won}/${NUGGET_COUNT}`, style).setOrigin(0, 0.5).setDepth(2)
+      .setShadow(1, 1, '#12081c', 0, false, true);
     this.ticket = this.add.image(TICKET_AT.x, TICKET_AT.y, this.unlocked ? 'ticket' : 'ticket-locked').setDepth(2)
       .setInteractive({ useHandCursor: true });
     this.ticket.on('pointerdown', () => {
