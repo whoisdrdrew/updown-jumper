@@ -4,8 +4,8 @@ import heroIdle from '../art/hero/idle.png';
 import heroJump from '../art/hero/jump.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { hasSeenIntro, levelsDone, levelPhoto } from '../progress.js';
-import BossBeat from '../audio/BossBeat.js';
-import { SONGS } from '../audio/songs.js';
+import MenuMusic from '../audio/MenuMusic.js';
+import { SONGS, SONG_BPM } from '../audio/songs.js';
 import {
   preloadHome, cardKey, LEVEL_COUNT, CARD_AT, CARD_WINDOW, SELECT_OFFSET, HINT_AREA, TITLE_PANEL,
   PLAY_POS, PLAY_SELECT_OFFSET, SONG_MENU, SONG_TITLE_BOX, songRow, SONG_ROW_SELECT_OFFSET,
@@ -75,8 +75,9 @@ export default class HomeScene extends Phaser.Scene {
     this.select(SLOTS.indexOf(first));
 
     // Menu music, picked from the song menu; it stops when you leave the studio.
-    this.music = null; // { index, beat }
-    this.events.once('shutdown', () => this.music?.beat.stop());
+    this.music = null; // { index } of the song playing
+    this.menuMusic = new MenuMusic();
+    this.events.once('shutdown', () => this.menuMusic.stop());
 
     const kb = this.input.keyboard;
     kb.on('keydown-ENTER', () => (this.songs ? this.toggleSong(this.songs.row) : this.play()));
@@ -306,12 +307,11 @@ export default class HomeScene extends Phaser.Scene {
   // Plays song i, or stops it if it's the one playing.
   toggleSong(i) {
     const playing = this.music?.index === i;
-    this.music?.beat.stop();
+    this.menuMusic.stop();
     this.music = null;
     if (!playing) {
-      const beat = new BossBeat(this.sound.context, SONGS[i]);
-      beat.start();
-      this.music = { index: i, beat };
+      this.menuMusic.play(SONGS[i].url);
+      this.music = { index: i };
     }
     this.showPlaying();
   }
@@ -324,7 +324,7 @@ export default class HomeScene extends Phaser.Scene {
     this.nod?.stop();
     this.boris.y = BORIS_AT.floor;
     this.nod = on
-      ? this.tweens.add({ targets: this.boris, y: BORIS_AT.floor + 1, duration: 30000 / SONGS[this.music.index].bpm, yoyo: true, repeat: -1 })
+      ? this.tweens.add({ targets: this.boris, y: BORIS_AT.floor + 1, duration: 30000 / SONG_BPM, yoyo: true, repeat: -1 })
       : null;
   }
 }
