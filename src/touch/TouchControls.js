@@ -3,7 +3,7 @@
 // are small and faint, sitting in the side margins next to the game.
 //   Left 45% of the screen: put the thumb down anywhere and a cross appears under it. Slide left or
 //   right to walk, further to run, down for doors and buttons. The cross follows a thumb that drifts.
-//   Bottom right: B (shoot, hold to run) on the left half of the zone, A (jump) on the right half.
+//   Bottom right: B (shoot, hold to run) and A (jump); a tap presses whichever is nearer.
 //   Slide between them without lifting. Computers with a mouse never see any of it. Sideways only.
 //
 // The controls only set flags in `touch`; Controls.js reads them next to the keyboard, so the
@@ -216,8 +216,8 @@ function setupStick(zone, cross) {
   zone.addEventListener('pointercancel', end);
 }
 
-// B on the left half of the zone, A on the right half: a tap anywhere there counts, and a thumb can
-// slide from one to the other without lifting.
+// A tap anywhere in the zone presses the nearer of B and A, and a thumb can slide from one to the
+// other without lifting.
 function setupButtons(zone, buttons) {
   const jobs = { a: ['jump', 'jumpQueued'], b: ['action', 'shootQueued'] };
   const holding = new Map(); // pointer id -> 'a' or 'b'
@@ -237,9 +237,18 @@ function setupButtons(zone, buttons) {
     holding.set(id, name);
     update();
   };
+  // Whichever drawn button is closer to the thumb, so B works where B is drawn (the zone's halves
+  // didn't line up with the small buttons in the corner: tapping B used to jump).
+  const centre = (el) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
   const which = (e) => {
-    const rect = zone.getBoundingClientRect();
-    return e.clientX < rect.left + rect.width / 2 ? 'b' : 'a';
+    const a = centre(buttons.a);
+    const b = centre(buttons.b);
+    const da = Math.hypot(e.clientX - a.x, e.clientY - a.y);
+    const db = Math.hypot(e.clientX - b.x, e.clientY - b.y);
+    return db < da ? 'b' : 'a';
   };
 
   zone.addEventListener('pointerdown', (e) => {
