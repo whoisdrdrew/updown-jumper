@@ -8,6 +8,7 @@ Outputs (default /mnt/project-files/intro/art, or the folder given as the first 
   bed-back.png      headboard, mattress and pillows (Boris lies on top of this)
   bed-front.png     the duvet, throw and footboard (drawn over Boris)
   door-closed.png / door-open.png   the bedroom door, placed at DOOR_X, DOOR_Y on the backdrop
+  stable.png        640 x 360 indoor stable where the horse stands (replaces outside.png in the story)
 
 Run from the repo root:  python3 tools/intro_art.py [out_dir]   (needs Pillow and numpy)
 """
@@ -459,6 +460,141 @@ def outside():
     return c
 
 
+# ---------- the indoor stable (where the horse stands, after Sandro's reference) ----------
+
+BRICK = ['#8e7a62', '#b8a488', '#d8c8a8', '#ece2c8']
+MORTAR = '#c8baa0'
+OAK = ['#6a3e1a', '#a8682a', '#d08e40', '#ecb860']
+IRON = ['#1e1210', '#3a2418', '#5a3a24']
+PLASTER = ['#cfcdcd', '#e4e2e0', '#f6f4f0', '#fdfefd']
+COBBLE = ['#8e887e', '#b0aa9e', '#cec8bc', '#e4dfd4']
+BAYS = [(150, 270), (270, 390), (390, 510), (510, 630)]   # stall fronts between the brick pillars
+OPEN_BAY = 2                                              # the horse's stall, door swung open
+
+
+def brick_wall(c, mask, ys, xs, offset=0):
+    put(c, mask, BRICK[2])
+    course = (ys // 6) % 2
+    put(c, mask & (ys % 6 == 0), MORTAR)
+    put(c, mask & (((xs + course * 7 + offset) % 14) == 0) & (ys % 6 != 0), MORTAR)
+    put(c, mask & (ys % 6 == 1) & (((xs + course * 7 + offset) % 14) != 0), BRICK[3])
+    put(c, mask & (ys % 6 == 5) & (((xs + course * 7 + offset) % 14) > 9), BRICK[1])
+
+
+def stall_front(c, x0, x1, open_):
+    """One stall: dark iron bars with a swooping top over an oak lower door with a diamond brace."""
+    ys, xs = np.mgrid[0:H, 0:W]
+    w = x1 - x0
+    top_lo, bars_bot, door_top = 196, 236, 238
+    # Swoop: the bars rise at both ends towards the pillars, lowest in the middle.
+    u = (xs - x0) / w
+    swoop = top_lo - 34 * (np.abs(u - 0.5) * 2) ** 2.2
+    bars = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < bars_bot)
+    if open_:
+        # Inside the open stall: shadowy wood and hay; the door is swung against the right post.
+        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < FLOOR_Y)
+        shade_mask(c, inside, [IRON[2], IRON[1], IRON[0]], np.clip((ys - 160) / 140, 0, 0.99))
+        hay = inside & (ys > FLOOR_Y - 18 + 4 * np.sin(xs / 5.0))
+        put(c, hay, '#b8862e'); put(c, hay & ((xs * 3 + ys * 5) % 7 == 0), '#ecc860'); put(c, hay & ((xs + ys * 3) % 9 == 0), '#7a5420')
+    put(c, bars & ((xs - x0) % 6 < 2), IRON[1])
+    put(c, bars & ((xs - x0) % 6 == 0), IRON[2])
+    # The swoop rail and its lower rail.
+    for x in range(x0 + 2, x1 - 2):
+        y = int(top_lo - 34 * (abs((x - x0) / w - 0.5) * 2) ** 2.2)
+        c.rect(x, y - 3, 1, 4, IRON[1]); c.px(x, y - 3, IRON[2]); c.px(x, y - 4, OUTLINE); c.px(x, y + 1, OUTLINE)
+    c.rect(x0 + 2, bars_bot, w - 4, 3, IRON[1]); c.rect(x0 + 2, bars_bot, w - 4, 1, IRON[2])
+    if not open_:
+        dx0, dx1 = x0 + 4, x1 - 4
+        box(c, dx0, door_top, dx1 - dx0, FLOOR_Y - door_top - 2, OAK[1:])
+        # Planks and a diamond brace in the middle panel.
+        put(c, (xs > dx0 + 2) & (xs < dx1 - 2) & (ys > door_top + 2) & (ys < FLOOR_Y - 4) & ((xs - dx0) % 8 == 0), OAK[1])
+        cx, cy, r = (dx0 + dx1) / 2, (door_top + FLOOR_Y - 2) / 2, min(dx1 - dx0, FLOOR_Y - door_top) / 2 - 8
+        dia = np.abs(np.abs(xs - cx) / r + np.abs(ys - cy) / (r * 0.85) - 1) < 0.07
+        dia = np.abs(np.abs(xs - cx) / r + np.abs(ys - cy) / (r * 0.85) - 1) < 0.11
+        put(c, dia, OAK[3]); put(c, dia & (ys > cy), OAK[0])
+        frame(c, dx0 + 6, door_top + 6, dx1 - dx0 - 12, FLOOR_Y - door_top - 14, OAK[0])
+        c.rect(int(cx) - 8, door_top + 10, 16, 3, IRON[1])            # name plate
+        c.rect(dx1 - 6, door_top + 26, 3, 8, IRON[1])                 # latch
+    else:
+        # The door swung open against the right post, seen edge-on as a thick plank.
+        box(c, x1 - 14, door_top, 8, FLOOR_Y - door_top - 2, OAK[1:])
+    # Iron posts with ball finials at both ends of the stall front.
+    for px_ in (x0, x1 - 5):
+        box(c, px_, 158, 5, FLOOR_Y - 158, IRON)
+        ball = c.ellipse_mask(px_ + 2.5, 153, 4, 4)
+        c.shade(ball, px_ + 2.5, 153, 4, 4, ['#7a4a24', '#a8723a', '#d0a060'])
+        outline_of(c, ball)
+
+
+def stable():
+    """The indoor stable after Sandro's reference: cream brick arches, a skylight, oak and iron stall fronts,
+    pale cobbles. Same layout as the old outside scene: the door Boris comes through at VILLA_DOOR_X
+    on the left (villa-door-open.png fits it), the horse in the aisle at about x 420-500, floor at y 300."""
+    c = Canvas(W, H)
+    ys, xs = np.mgrid[0:H, 0:W]
+    # Ceiling with a long bright skylight.
+    put(c, ys < 40, PLASTER[1])
+    put(c, (ys >= 4) & (ys < 22), PLASTER[3]); put(c, (ys == 22), PLASTER[0]); put(c, ys == 3, PLASTER[0])
+    # Back wall behind the arches: white plaster with a band of clerestory windows.
+    put(c, (ys >= 40) & (ys < FLOOR_Y), PLASTER[2])
+    win = (ys >= 70) & (ys < 104)
+    put(c, win, '#b8d4ee'); put(c, win & (ys < 80), '#d8e8f6')
+    put(c, win & ((xs % 40) < 3), IRON[1]); put(c, (ys == 70) | (ys == 103), IRON[1])
+    put(c, win & ((xs % 40) >= 3) & (((xs % 40) + (ys - 70)) % 9 == 0) & ((xs // 40) % 2 == 0), PLASTER[3])   # louvres
+    put(c, (ys >= 106) & (ys < 108), PLASTER[0])
+    # Lower back wall: a little darker, a wooden beam, and a small arched window in each bay.
+    put(c, (ys >= 108) & (ys < FLOOR_Y), PLASTER[1])
+    put(c, (ys >= 220) & (ys < FLOOR_Y) & ((xs + ys) % 2 == 0), PLASTER[0])
+    c.rect(0, 110, W, 5, OAK[1]); c.rect(0, 110, W, 1, OAK[3]); c.rect(0, 115, W, 1, OAK[0])
+    for x0, x1 in BAYS + [(30, 130)]:
+        cx = (x0 + x1) // 2
+        arch_win = ((xs >= cx - 13) & (xs < cx + 13) & (ys >= 138) & (ys < 172)) | (((xs + 0.5 - cx) / 13) ** 2 + ((ys + 0.5 - 138) / 12) ** 2 < 1)
+        put(c, arch_win, '#b8d4ee'); put(c, arch_win & (ys < 146), '#d8e8f6')
+        put(c, arch_win & (xs == cx), IRON[1]); put(c, arch_win & (ys == 155), IRON[1])
+        outline_of(c, arch_win)
+    # Brick arcade: an arch over each bay, pillars between.
+    arcade = (ys >= 40) & (ys < FLOOR_Y)
+    opening = np.zeros((H, W), bool)
+    for x0, x1 in BAYS + [(30, 130)]:
+        cx, r = (x0 + x1) / 2, (x1 - x0) / 2 - 10
+        spring = 112
+        opening |= (xs > x0 + 10) & (xs < x1 - 10) & (ys > spring) & (ys < FLOOR_Y)
+        opening |= (((xs - cx) / r) ** 2 + ((ys - spring) / 34) ** 2 < 1) & (ys <= spring)
+    wall = arcade & ~opening
+    brick_wall(c, wall, ys, xs)
+    # Arch rims (a soldier course of lighter brick) and pillar shading.
+    rim = wall & ~(np.roll(wall, 3, 0) & np.roll(wall, 3, 1) & np.roll(wall, -3, 1))
+    put(c, rim, BRICK[3]); outline_of(c, opening & ~(ys >= FLOOR_Y - 1))
+    for x0, x1 in BAYS + [(30, 130)]:
+        put(c, wall & (xs >= x1 - 10) & (xs < x1 - 7) & (ys > 112), BRICK[1])
+    # A cornice line along the top of the arcade and little wall lamps on each pillar.
+    c.rect(0, 40, W, 3, BRICK[3]); c.rect(0, 43, W, 1, BRICK[0]); c.rect(0, 39, W, 1, OUTLINE)
+    for x0, x1 in BAYS:
+        box(c, x0 - 7, 124, 6, 6, IRON)
+    # Stall fronts.
+    for i, (x0, x1) in enumerate(BAYS):
+        stall_front(c, x0, x1, i == OPEN_BAY)
+    # Entry door frame on the left (the opening the villa door sprite fills).
+    c.rect(VILLA_DOOR_X, DOOR_Y, 64, FLOOR_Y - DOOR_Y, '#221533')
+    box(c, VILLA_DOOR_X - 6, DOOR_Y - 6, 76, 6, OAK[1:])
+    box(c, VILLA_DOOR_X - 6, DOOR_Y, 6, FLOOR_Y - DOOR_Y, OAK[1:]); box(c, VILLA_DOOR_X + 64, DOOR_Y, 6, FLOOR_Y - DOOR_Y, OAK[1:])
+    # Bridles hanging on two posts, like the photo.
+    for hx in (264, 504):
+        for y in range(244, 272):
+            c.px(hx + int(2 * np.sin(y / 4)), y, '#2a2a2e'); c.px(hx + 3 + int(2 * np.sin(y / 5)), y, '#5a5a62')
+        c.rect(hx - 1, 242, 6, 3, '#4a4a52')
+    # Cobbled floor.
+    floor = ys >= FLOOR_Y
+    put(c, floor, COBBLE[1])
+    row = (ys - FLOOR_Y) // 6
+    sx = (xs + row * 5) % 11
+    put(c, floor & ((ys - FLOOR_Y) % 6 == 0), COBBLE[0]); put(c, floor & (sx == 0), COBBLE[0])
+    put(c, floor & ((ys - FLOOR_Y) % 6 == 1) & (sx > 1), COBBLE[3]); put(c, floor & ((ys - FLOOR_Y) % 6 == 2) & (sx > 2) & (sx < 8), COBBLE[2])
+    put(c, floor & (ys > FLOOR_Y + 40) & ((xs + ys) % 2 == 0), COBBLE[0])
+    c.rect(0, FLOOR_Y, W, 2, COBBLE[3]); c.rect(0, FLOOR_Y - 1, W, 1, OUTLINE)
+    return c
+
+
 # ---------- the note, the letter, the dialog box and the skip button ----------
 
 PAPER = ['#a68e72', '#cbb89a', '#e6d8bf', '#f5ecdc']
@@ -597,6 +733,7 @@ def main():
     door(False).save(os.path.join(out, 'door-closed.png'))
     door(True).save(os.path.join(out, 'door-open.png'))
     outside().save(os.path.join(out, 'outside.png'))
+    stable().save(os.path.join(out, 'stable.png'))
     door(True, from_outside=True).save(os.path.join(out, 'villa-door-open.png'))
     note_ground().save(os.path.join(out, 'note.png'))
     letter().save(os.path.join(out, 'letter.png'))
