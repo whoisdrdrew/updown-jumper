@@ -224,9 +224,9 @@ export default class BonusScene extends Phaser.Scene {
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeLeft = BONUS.timeLimit;
     this.timeText = text(GAME_WIDTH - 6, 15, this.state === 'done' ? '0' : String(this.timeLeft), 1);
-    // This level's golden nugget: an empty slot until every duck is caught in time.
-    this.nuggetIcon = this.add.image(ux + left + 3, uy + 20, hasNugget(this.level) ? 'nugget-icon' : 'nugget-slot')
-      .setScale(0.5).setScrollFactor(0).setDepth(10);
+    // This level's golden nugget, in line next to the duck count: an empty slot until every duck is caught in time.
+    this.nuggetIcon = this.add.image(ux + left + 41, uy + 9, hasNugget(this.level) ? 'nugget-icon' : 'nugget-slot')
+      .setScale(1).setScrollFactor(0).setDepth(10);
   }
 
   // "Start the timer?" with YES and NO. Left/right picks; down, jump, Space or Enter confirms; or tap.
@@ -328,13 +328,13 @@ export default class BonusScene extends Phaser.Scene {
         targets: nugget,
         x: this.nuggetIcon.x,
         y: this.nuggetIcon.y,
-        scale: 0.5,
+        scale: 0.55,
         duration: 450,
         ease: 'Quad.easeIn',
         onComplete: () => {
           nugget.destroy();
           this.nuggetIcon.setTexture('nugget-icon');
-          this.tweens.add({ targets: this.nuggetIcon, scale: 1, duration: 120, yoyo: true });
+          this.tweens.add({ targets: this.nuggetIcon, scale: 1.5, duration: 120, yoyo: true });
         },
       });
     });
