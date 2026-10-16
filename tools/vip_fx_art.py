@@ -117,10 +117,10 @@ def co2_blast(frame_):
     ys, xs = np.mgrid[0:h, 0:w]
     dens = np.zeros((h, w))
     length = [90, 185, 190, 175, 160][frame_]
-    lift = [0, 0, 6, 30, 55][frame_]                                     # the cloud rises as it fades
+    lift = [0, 0, 0, 30, 55][frame_]                                     # the cloud rises as it fades
     strength = [1.0, 1.0, 0.9, 0.62, 0.32][frame_]
     width = [0.7, 0.9, 1.05, 1.2, 1.3][frame_]
-    start = [0, 0, 0.1, 0.4, 0.55][frame_]                               # the jet has stopped at the nozzle
+    start = [0, 0, 0, 0.4, 0.55][frame_]                               # the jet has stopped at the nozzle
     for i in range(48):
         t = i / 47
         if t < start:
