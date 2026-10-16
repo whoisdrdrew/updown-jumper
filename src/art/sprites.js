@@ -22,6 +22,14 @@ import caseOpen from './suitcase/open.png';
 import securityWalk0 from './security/walk-0.png';
 import securityWalk1 from './security/walk-1.png';
 import securityKnocked from './security/knocked.png';
+import hosWalk0 from './head-of-security/walk-0.png';
+import hosWalk1 from './head-of-security/walk-1.png';
+import hosSpot from './head-of-security/spot.png';
+import hosCharge0 from './head-of-security/charge-0.png';
+import hosCharge1 from './head-of-security/charge-1.png';
+import hosPunch from './head-of-security/punch.png';
+import hosKnocked from './head-of-security/knocked.png';
+import exclaim from './intro/exclaim.png';
 import egg from './world/egg.png';
 import eggHalf from './world/egg-half.png';
 import burger from './world/burger.png';
@@ -80,6 +88,15 @@ export function preloadSprites(scene) {
   scene.load.image('security-walk-0', securityWalk0);
   scene.load.image('security-walk-1', securityWalk1);
   scene.load.image('security-knocked', securityKnocked);
+  // The head of security (art/head-of-security in the project files).
+  scene.load.image('hos-walk-0', hosWalk0);
+  scene.load.image('hos-walk-1', hosWalk1);
+  scene.load.image('hos-spot', hosSpot);
+  scene.load.image('hos-charge-0', hosCharge0);
+  scene.load.image('hos-charge-1', hosCharge1);
+  scene.load.image('hos-punch', hosPunch);
+  scene.load.image('hos-knocked', hosKnocked);
+  scene.load.image('hos-exclaim', exclaim);
   scene.load.image('egg', egg);
   scene.load.image('egg-half', eggHalf);
   // The burger power-up and the box it pops out of (art/powerups/ in the project files).

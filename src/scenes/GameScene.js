@@ -4,6 +4,7 @@ import Player from '../player/Player.js';
 import Controls from '../player/Controls.js';
 import RubberDucks from '../player/RubberDucks.js';
 import Securities from '../objects/Securities.js';
+import HeadSecurity from '../objects/HeadSecurity.js';
 import RideDucks from '../objects/RideDucks.js';
 import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
@@ -48,7 +49,7 @@ export default class GameScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createSprites(this);
-    const { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor, chiefs } = this.buildLevel(testLevel);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
@@ -67,6 +68,7 @@ export default class GameScene extends Phaser.Scene {
     this.blocks = new Blocks(this, layer, view, blockContents);
     this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
     this.addItems(layer, guards, eggs, pickups);
+    this.addHeadSecurity(layer, chiefs);
     if (suitcase) this.suitcase = new Suitcase(this, this.player, suitcase);
 
     this.addGoal(goal);
@@ -99,8 +101,30 @@ export default class GameScene extends Phaser.Scene {
     this.rideDucks.update();
     this.burgers.update();
     this.securities.update();
+    this.headSecurity.update();
     if (this.boss?.active) this.boss.update(time);
     if (this.player.y > this.worldH + 32) this.respawn();
+  }
+
+  // The head of security: walk into him and he shoves you like a bouncer, he punches when he
+  // catches you, and it takes two stomps or two rubber ducks to knock him out.
+  addHeadSecurity(layer, positions) {
+    const player = this.player;
+    this.headSecurity = new HeadSecurity(this, positions, layer);
+    this.physics.add.overlap(player, this.headSecurity.group, (_p, chief) => {
+      if (player.dead) return;
+      if (this.headSecurity.isStomp(player, chief)) {
+        this.headSecurity.hit(chief, 0);
+        player.body.setVelocityY(-SECURITY.stompBounce);
+        return;
+      }
+      if (player.invulnerable) return;
+      this.headSecurity.touched(chief);
+    });
+    this.physics.add.overlap(this.shots.group, this.headSecurity.group, (shot, chief) => {
+      this.headSecurity.hit(chief, shot.dir);
+      this.shots.pop(shot);
+    });
   }
 
   // Rubber-duck shots, security bouncers and the ride-on duck, and how they touch each other.
@@ -237,6 +261,7 @@ export default class GameScene extends Phaser.Scene {
     let start = { x: TILE * 2, y: 0 };
     let goal = null;
     const guards = [];
+    const chiefs = [];
     const eggs = [];
     const pickups = [];
     let suitcase = null;
@@ -249,6 +274,7 @@ export default class GameScene extends Phaser.Scene {
         if (ch === 'P') start = { x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 };
         if (ch === 'F') goal = { x: x * TILE + TILE / 2, y: y * TILE };
         if (ch === 'G') guards.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
+        if (ch === 'C') chiefs.push({ x: x * TILE + TILE / 2, y: (y + 1) * TILE });
         if (ch === 'o') pickups.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
         if (ch === 'S') suitcase = { x: x * TILE + TILE / 2, y: (y + 1) * TILE };
         if (ch === 'K') bossAt = { x: x * TILE + TILE / 2, y: y * TILE };
@@ -284,7 +310,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.children.remove(layer); // re-added after the background so it draws on top
     this.children.remove(view);
-    return { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor };
+    return { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor, chiefs };
   }
 
   addGoal(goal) {

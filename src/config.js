@@ -61,6 +61,26 @@ export const SECURITY = {
   stompBounce: 240, // the player bounces off his head this fast
 };
 
+export const HEAD_SECURITY = {
+  walkSpeed: 26, // patrols at the bouncers' pace
+  stepMs: 200,
+  sightTiles: 8, // he spots Boris in front of him on his floor this close...
+  spotMs: 400, // ...points and shouts this long...
+  chargeSpeed: 80, // ...then charges, about 3x his walk
+  chargeStepMs: 90,
+  chargeMaxMs: 2200, // gives up a charge after this long
+  punchTiles: 1.6, // throws the punch when Boris is this close
+  punchReach: 22, // world pixels from his middle the fist reaches
+  punchMs: 320, // how long the punch is held
+  punchSpeed: 300, // the punch knocks Boris back this fast...
+  punchHop: 200, // ...and up
+  punchLockMs: 550, // no steering for that long
+  skidMs: 450, // after a charge he skids to a stop...
+  restMs: 1200, // ...and won't spot Boris again for this long
+  hits: 2, // two stomps (or rubber ducks) knock him out
+  dazedMs: 700, // after the first one he's dazed this long
+};
+
 // The big duck you hatch from an egg and ride, like Yoshi.
 export const RIDE_DUCK = {
   eggRollSpeed: 50, // an egg from a music-note block hops out sideways...

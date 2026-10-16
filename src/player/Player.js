@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PHYSICS, PLAYER, SECURITY, RIDE_DUCK } from '../config.js';
+import { PHYSICS, PLAYER, SECURITY, HEAD_SECURITY, RIDE_DUCK } from '../config.js';
 import { HERO_SCALE } from '../art/sprites.js';
 import DuckPuffs from './DuckPuffs.js';
 
@@ -122,6 +122,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dir = this.x < x ? -1 : 1;
     this.body.setVelocity(dir * SECURITY.shoveSpeed, -SECURITY.shoveHop);
     this.steerLockedUntil = this.scene.time.now + SECURITY.shoveLockMs;
+    this.takeHit();
+  }
+
+  // Punched by the head of security: knocked back hard, away from him, and it costs a hit.
+  punchedFrom(x) {
+    if (this.invulnerable) return;
+    const dir = this.x < x ? -1 : 1;
+    this.body.setVelocity(dir * HEAD_SECURITY.punchSpeed, -HEAD_SECURITY.punchHop);
+    this.steerLockedUntil = this.scene.time.now + HEAD_SECURITY.punchLockMs;
     this.takeHit();
   }
 
