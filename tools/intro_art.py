@@ -492,8 +492,9 @@ def stall_front(c, x0, x1, open_):
     bars = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < bars_bot)
     if open_:
         # Inside the open stall: shadowy wood and hay; the door is swung against the right post.
-        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= swoop) & (ys < FLOOR_Y)
-        shade_mask(c, inside, [IRON[2], IRON[1], IRON[0]], np.clip((ys - 160) / 140, 0, 0.99))
+        # Above the door height the white back wall shows through the bars, as on every stall.
+        inside = (xs >= x0 + 4) & (xs < x1 - 4) & (ys >= door_top) & (ys < FLOOR_Y)
+        shade_mask(c, inside, [IRON[2], IRON[1], IRON[0]], np.clip((ys - door_top) / 60, 0, 0.99))
         hay = inside & (ys > FLOOR_Y - 18 + 4 * np.sin(xs / 5.0))
         put(c, hay, '#b8862e'); put(c, hay & ((xs * 3 + ys * 5) % 7 == 0), '#ecc860'); put(c, hay & ((xs + ys * 3) % 9 == 0), '#7a5420')
     put(c, bars & ((xs - x0) % 6 < 2), IRON[1])
