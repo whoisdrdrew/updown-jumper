@@ -25,9 +25,11 @@ export default class Controls {
 
   left() { return this.leftKey.isDown || touch.left; }
   right() { return this.rightKey.isDown || touch.right; }
-  // Down (keyboard or the cross) goes through doors and presses the bonus room buttons.
   down() { return this.downKey.isDown || touch.down; }
   downJustPressed() { return this.consume('downQueued') | consumeTouch('downQueued'); }
+  // Up goes through the VIP door: the up arrow (instead of a jump, when standing at a door) or the
+  // cross slid up. The A button always jumps.
+  upJustPressed() { return this.consume('jumpQueued') | consumeTouch('upQueued'); }
   // The up arrow and the A button jump.
   jump() { return this.jumpKey.isDown || touch.jump; }
   jumpJustPressed() { return this.consume('jumpQueued') | consumeTouch('jumpQueued'); }

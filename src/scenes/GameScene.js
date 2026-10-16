@@ -92,8 +92,9 @@ export default class GameScene extends Phaser.Scene {
     this.updateBackground(time);
     if (this.finished || this.inBonus) return;
     if (this.cutscene) return this.player.animate(time, this.player.body.blocked.down);
+    // Up at the VIP door goes in (checked first, so that press doesn't also jump).
+    if (this.atVipDoor() && this.controls.upJustPressed()) return this.enterBonus();
     this.player.update(time, delta);
-    if (this.controls.downJustPressed() && this.atVipDoor()) this.enterBonus();
     this.shots.update();
     this.rideDucks.update();
     this.burgers.update();
@@ -392,8 +393,8 @@ export default class GameScene extends Phaser.Scene {
     this.player.setAlpha(1);
     if (ducks) this.player.addAmmo(ducks);
     this.time.delayedCall(300, () => this.vipDoor.setTexture('vip-door'));
-    // Forget presses made in the room, so the down that left it doesn't go straight back in.
-    for (const flag of ['jumpQueued', 'shootQueued', 'downQueued']) {
+    // Forget presses made in the room, so the up that left it doesn't go straight back in.
+    for (const flag of ['jumpQueued', 'shootQueued', 'downQueued', 'upQueued']) {
       this.controls[flag] = false;
       touch[flag] = false;
     }

@@ -2,7 +2,7 @@
 // mobile platformers such as Leo's Fortune: the touch zones are big but invisible, and the drawings
 // are small and faint, sitting in the side margins next to the game.
 //   Left 45% of the screen (below the EXIT button): put the thumb down anywhere and a cross appears under it. Slide left or
-//   right to walk, further to run, down for doors and buttons. The cross follows a thumb that drifts.
+//   right to walk, further to run, up for the VIP door. The cross follows a thumb that drifts.
 //   Bottom right: B (shoot, hold to run) and A (jump); a tap presses whichever is nearer.
 //   Slide between them without lifting. Computers with a mouse never see any of it. Sideways only.
 //
@@ -14,7 +14,7 @@ export const touch = {
   left: false,
   right: false,
   up: false,
-  down: false, // enters doors and presses the buttons in the bonus room
+  down: false,
   jump: false,
   action: false,
   run: false, // sliding the cross far to one side
@@ -22,6 +22,7 @@ export const touch = {
   jumpQueued: false,
   shootQueued: false,
   downQueued: false,
+  upQueued: false, // the cross slid up: goes through the VIP door
 };
 
 // A touch screen with no mouse pointer: phones and tablets, not laptops with a touch screen.
@@ -162,6 +163,7 @@ function setupStick(zone, cross) {
 
   const set = (dirs) => {
     if (dirs.down && !touch.down) touch.downQueued = true;
+    if (dirs.up && !touch.up) touch.upQueued = true;
     for (const k of Object.keys(arms)) {
       touch[k] = Boolean(dirs[k]);
       arms[k].classList.toggle('on', touch[k]);

@@ -24,7 +24,7 @@ const CELL_COLOR = 0x221533;
 // The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
 // Jump on the music button for the boss's beat, on the timer button to start the 15 seconds
 // (after a yes/no popup); the gate opens and every duck you grab uncovers a piece of the portrait.
-// When time is up the ducks vanish and the whole portrait shows. Leave through the door (down).
+// When time is up the ducks vanish and the whole portrait shows. Leave through the door (up).
 // Started by GameScene with { big, masked, played }; wakes GameScene with { ducks, played }.
 export default class BonusScene extends Phaser.Scene {
   constructor() {
@@ -78,19 +78,17 @@ export default class BonusScene extends Phaser.Scene {
     if (this.state === 'leaving') return;
     if (this.state === 'popup') return this.updatePopup(time);
 
+    // Up at the door leaves (checked before the player moves, so that press doesn't also jump).
+    const atDoor = player.body.blocked.down && Math.abs(player.x - DOOR_X) <= BONUS.doorReach;
+    this.hint.setVisible(atDoor);
+    if (atDoor) this.hint.setPosition(DOOR_X, FLOOR - 48 + this.hintBob);
+    if (atDoor && controls.upJustPressed()) return this.leave();
     player.update(time, delta);
     this.bounce();
     // A real jump or stepping off makes the next landing press the button again (the hop doesn't).
     const off = this.standingOn && Math.abs(player.x - this.standingOn.x) > this.standingOn.displayWidth / 2 + 4;
     if (off || player.body.velocity.y < -BONUS.buttonBounce - 40) this.standingOn = null;
 
-    const down = controls.downJustPressed();
-    const onGround = player.body.blocked.down;
-    const near = (x) => onGround && Math.abs(player.x - x) <= BONUS.doorReach;
-    const atDoor = near(DOOR_X);
-    this.hint.setVisible(atDoor);
-    if (atDoor) this.hint.setPosition(DOOR_X, FLOOR - 48 + this.hintBob);
-    if (down && atDoor) this.leave();
   }
 
   // A button on the floor, solid so you can stand on it.
@@ -189,10 +187,10 @@ export default class BonusScene extends Phaser.Scene {
     else this.tweens.add({ targets: this.gateArt, y: -FLOOR, duration: 600, ease: 'Quad.easeIn' });
   }
 
-  // A small bobbing arrow over the door when you can use it: press down.
+  // A small bobbing arrow over the door when you can use it: press up.
   addHint() {
     const g = this.make.graphics({}, false);
-    g.fillStyle(0xffffff).fillTriangle(0, 0, 8, 0, 4, 5);
+    g.fillStyle(0xffffff).fillTriangle(0, 5, 8, 5, 4, 0);
     g.generateTexture('bonus-hint', 8, 5);
     g.destroy();
     this.hint = this.add.image(0, 0, 'bonus-hint').setVisible(false).setDepth(6);
@@ -331,6 +329,7 @@ export default class BonusScene extends Phaser.Scene {
   flushPresses() {
     const c = this.controls;
     c.downJustPressed();
+    c.upJustPressed();
     c.jumpJustPressed();
     c.shootJustPressed();
   }
