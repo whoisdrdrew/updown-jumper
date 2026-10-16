@@ -5,6 +5,7 @@ import BossBeat from '../audio/BossBeat.js';
 import { BONUS, GAME_WIDTH, PLAYER, ZOOM } from '../config.js';
 import { DUCK_SCALE } from '../art/sprites.js';
 import { preloadBonus, BONUS_SCALE, POPUP_TEXT_BOX, PORTRAIT_INSET } from '../art/bonus.js';
+import { addExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -208,8 +209,14 @@ export default class BonusScene extends Phaser.Scene {
         .setOrigin(originX, 0)
         .setScrollFactor(0)
         .setDepth(10);
-    this.add.image(ux + 10, uy + 9, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
-    this.countText = text(17, 5, 'x00');
+    // EXIT leaves the level too (the level is asleep behind this room).
+    addExitButton(this, () => {
+      this.scene.stop('game');
+      this.scene.start('home');
+    });
+    const left = 10 + EXIT_BUTTON_WIDTH + 4;
+    this.add.image(ux + left, uy + 9, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
+    this.countText = text(left + 7, 5, 'x00');
     text(GAME_WIDTH / 2, 5, 'VIP DUCK ROOM', 0.5).setColor('#ffe680');
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeLeft = BONUS.timeLimit;

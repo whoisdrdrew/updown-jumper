@@ -10,6 +10,7 @@ import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
 import Boss from '../objects/Boss.js';
 import takeWinnerPhoto from '../objects/WinnerPhoto.js';
+import { addExitButton, preloadExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
 import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
@@ -35,6 +36,7 @@ export default class GameScene extends Phaser.Scene {
     preloadBackground(this);
     preloadBonus(this);
     preloadFelix(this);
+    preloadExitButton(this);
   }
 
   create(data) {
@@ -82,7 +84,6 @@ export default class GameScene extends Phaser.Scene {
     if (bossAt) this.addBossArena(bossAt);
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.input.keyboard.on('keydown-S', () => this.scene.start('intro', { room: 'bedroom' })); // S: the story again
-    this.input.keyboard.on('keydown-ESC', () => !this.inBonus && this.scene.start('home')); // Esc: back to the studio
     this.finished = false;
     this.worldH = worldH;
   }
@@ -179,6 +180,8 @@ export default class GameScene extends Phaser.Scene {
   // Top bar in the style of the reference: hearts and rubber ducks left, world name centre, time right.
   addHud() {
     const { x: ux, y: uy } = this.ui;
+    addExitButton(this, () => this.scene.start('home'));
+    const left = 10 + EXIT_BUTTON_WIDTH + 4; // hearts and ducks sit right of the EXIT button
     const text = (x, y, value, originX = 0) =>
       this.add
         .text(ux + x, uy + y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff', align: 'center' })
@@ -189,10 +192,10 @@ export default class GameScene extends Phaser.Scene {
 
     this.hearts = [];
     for (let i = 0; i < PLAYER.maxHits; i++) {
-      this.hearts.push(this.add.image(ux + 10 + i * 10, uy + 9, 'heart').setScale(ITEM_SCALE).setScrollFactor(0).setDepth(10));
+      this.hearts.push(this.add.image(ux + left + i * 10, uy + 9, 'heart').setScale(ITEM_SCALE).setScrollFactor(0).setDepth(10));
     }
-    this.add.image(ux + 10, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
-    this.ammoText = text(17, 18, '');
+    this.add.image(ux + left, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
+    this.ammoText = text(left + 7, 18, '');
     text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
     text(GAME_WIDTH / 2, 15, 'TULUM WORLD 1-1', 0.5);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);

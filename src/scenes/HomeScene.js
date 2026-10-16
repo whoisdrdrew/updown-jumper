@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import Controls from '../player/Controls.js';
+import heroIdle from '../art/hero/idle.png';
+import heroJump from '../art/hero/jump.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { hasSeenIntro, levelsDone, levelPhoto } from '../progress.js';
 import {
@@ -10,6 +12,7 @@ const FONT = '"Press Start 2P", monospace';
 const GOLD = '#ffd34a';
 // The levels that exist so far; the others can be unlocked but say "coming soon".
 const BUILT = new Set([1]);
+const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk, under the monitor
 
 // The home screen and level menu: Boris's music studio. The 10 levels hang as instant photos on two
 // strings. Finished levels show their winner photo from Felix, the next level has a play arrow, and
@@ -24,6 +27,8 @@ export default class HomeScene extends Phaser.Scene {
 
   preload() {
     preloadHome(this);
+    this.load.image('home-boris', heroIdle);
+    this.load.image('home-boris-jump', heroJump);
   }
 
   create(data) {
@@ -41,6 +46,7 @@ export default class HomeScene extends Phaser.Scene {
     this.cards = [];
     for (let level = 1; level <= LEVEL_COUNT; level++) this.addCard(level, done, data?.justDone === level);
 
+    this.addBoris(Boolean(data?.justDone));
     this.addTitle();
     this.addHint();
     this.selectFrame = this.add.image(0, 0, 'home-select-0').setOrigin(0).setDepth(3);
@@ -98,6 +104,29 @@ export default class HomeScene extends Phaser.Scene {
     this.textures.addBase64(key, photo);
   }
 
+  // Boris at his desk. He breathes, turns to the level you pick, and jumps for joy over a new photo.
+  addBoris(happy) {
+    this.boris = this.add.image(BORIS_AT.x, BORIS_AT.floor, 'home-boris').setOrigin(0.5, 1).setDepth(2);
+    this.tweens.add({ targets: this.boris, scaleY: 0.97, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    if (happy) this.time.delayedCall(900, () => this.borisJump());
+  }
+
+  borisJump(then) {
+    const boris = this.boris;
+    boris.setTexture('home-boris-jump');
+    this.tweens.add({
+      targets: boris,
+      y: BORIS_AT.floor - 26,
+      duration: 230,
+      ease: 'Quad.easeOut',
+      yoyo: true,
+      onComplete: () => {
+        boris.setTexture('home-boris');
+        then?.();
+      },
+    });
+  }
+
   // The game's name on the empty panel above the monitor.
   addTitle() {
     const cx = TITLE_PANEL.x + TITLE_PANEL.w / 2;
@@ -122,6 +151,7 @@ export default class HomeScene extends Phaser.Scene {
     this.selected = level;
     const [x, y] = CARD_AT[level - 1];
     this.selectFrame.setPosition(x + SELECT_OFFSET.x, y + SELECT_OFFSET.y);
+    this.boris.setFlipX(x + 20 < BORIS_AT.x); // he faces right in the art
     this.hintTop.setText(`LEVEL ${level}`);
     this.hintBottom.setText(BUILT.has(level) ? (touch.enabled ? 'TAP TO PLAY' : 'ENTER TO PLAY') : 'COMING SOON');
   }
@@ -135,8 +165,12 @@ export default class HomeScene extends Phaser.Scene {
       return;
     }
     // The first time, level 1 starts with the story.
-    if (level === 1 && !hasSeenIntro()) this.start('intro', { room: 'bedroom' });
-    else this.start('game', { level });
+    this.starting = true;
+    this.borisJump(() => {
+      this.starting = false;
+      if (level === 1 && !hasSeenIntro()) this.start('intro', { room: 'bedroom' });
+      else this.start('game', { level });
+    });
   }
 
   start(key, data) {

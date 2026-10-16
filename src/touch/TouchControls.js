@@ -1,7 +1,7 @@
 // On-screen controls for phones and tablets, made to cover as little of the game as possible, like
 // mobile platformers such as Leo's Fortune: the touch zones are big but invisible, and the drawings
 // are small and faint, sitting in the side margins next to the game.
-//   Left 45% of the screen: put the thumb down anywhere and a cross appears under it. Slide left or
+//   Left 45% of the screen (below the EXIT button): put the thumb down anywhere and a cross appears under it. Slide left or
 //   right to walk, further to run, down for doors and buttons. The cross follows a thumb that drifts.
 //   Bottom right: B (shoot, hold to run) and A (jump); a tap presses whichever is nearer.
 //   Slide between them without lifting. Computers with a mouse never see any of it. Sideways only.
@@ -42,7 +42,8 @@ const CSS = `
     --safe-l: max(10px, env(safe-area-inset-left, 0px)); --safe-r: max(10px, env(safe-area-inset-right, 0px));
     --safe-b: max(12px, env(safe-area-inset-bottom, 0px)); }
   /* Invisible touch zones. */
-  #touch .move-zone { position: absolute; left: 0; top: 0; bottom: 0; width: 45%; pointer-events: auto; }
+  /* The move zone leaves the top strip free for the EXIT button. */
+  #touch .move-zone { position: absolute; left: 0; top: 15%; bottom: 0; width: 45%; pointer-events: auto; }
   #touch .btn-zone { position: absolute; right: 0; top: 30%; bottom: 0; width: 38%; pointer-events: auto; }
   /* The cross: a small ghost bottom left at rest; under the thumb, bigger and brighter, while touched. */
   #touch .cross { position: absolute; width: 60px; height: 60px; left: var(--safe-l); bottom: var(--safe-b);
