@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, ZOOM, PHYSICS } from './config.js';
+import HomeScene from './scenes/HomeScene.js';
 import IntroScene from './scenes/IntroScene.js';
 import GameScene from './scenes/GameScene.js';
 import BonusScene from './scenes/BonusScene.js';
@@ -21,7 +22,8 @@ function startGame() {
       default: 'arcade',
       arcade: { gravity: { y: PHYSICS.gravity }, debug: false },
     },
-    scene: [IntroScene, GameScene, BonusScene], // the story intro first, then level 1; the bonus room behind the VIP door
+    // The home screen (level menu) first; the story before level 1; the bonus room behind the VIP door.
+    scene: [HomeScene, IntroScene, GameScene, BonusScene],
   });
 
   // Handy for debugging from the browser console.

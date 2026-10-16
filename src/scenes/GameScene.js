@@ -17,6 +17,8 @@ import { createBackground, preloadBackground } from '../art/background.js';
 import { preloadBonus, BONUS_SCALE } from '../art/bonus.js';
 import { preloadFelix } from '../art/felix.js';
 import { touch } from '../touch/TouchControls.js';
+import { markLevelDone } from '../progress.js';
+import { CARD_WINDOW } from '../art/home.js';
 
 const FONT = '"Press Start 2P", monospace';
 import testLevel from '../levels/testLevel.js';
@@ -35,7 +37,10 @@ export default class GameScene extends Phaser.Scene {
     preloadFelix(this);
   }
 
-  create() {
+  create(data) {
+    // Which level (1..10) this is; a restart keeps the one being played. Only level 1 is built so far.
+    this.level = data?.level ?? this.level ?? 1;
+    this.winnerPhoto = null;
     // Zoom first: the fixed background and top bar are placed relative to the zoomed view.
     const cam = this.cameras.main;
     cam.setZoom(ZOOM);
@@ -77,6 +82,7 @@ export default class GameScene extends Phaser.Scene {
     if (bossAt) this.addBossArena(bossAt);
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.input.keyboard.on('keydown-S', () => this.scene.start('intro', { room: 'bedroom' })); // S: the story again
+    this.input.keyboard.on('keydown-ESC', () => !this.inBonus && this.scene.start('home')); // Esc: back to the studio
     this.finished = false;
     this.worldH = worldH;
   }
@@ -406,7 +412,12 @@ export default class GameScene extends Phaser.Scene {
     this.player.body.setVelocity(0, 0);
     this.player.body.setAllowGravity(false);
     this.banner('LEVEL CLEAR!');
-    this.time.delayedCall(2000, () => this.scene.restart());
+    // Saved with its winner photo; the home screen hangs the photo on the level's card.
+    markLevelDone(this.level, this.winnerPhoto && shrinkPhoto(this.winnerPhoto));
+    this.time.delayedCall(2000, () => {
+      this.cameras.main.fadeOut(250, 18, 8, 28);
+      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('home', { justDone: this.level }));
+    });
   }
 
   respawn() {
@@ -424,4 +435,15 @@ export default class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(10);
   }
+}
+
+// The winner photo shrunk to the size of a card's window on the home screen, as a small PNG to save.
+function shrinkPhoto(image) {
+  const canvas = document.createElement('canvas');
+  canvas.width = CARD_WINDOW.w;
+  canvas.height = CARD_WINDOW.h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/png');
 }

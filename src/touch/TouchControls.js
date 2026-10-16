@@ -134,6 +134,14 @@ export function setupTouchControls(getGame) {
   document.addEventListener('pointerdown', lock);
 }
 
+// The home screen is played by tapping the level cards, so the controls step aside there.
+export function showTouchControls(on) {
+  const bar = document.getElementById('touch');
+  if (!bar) return;
+  if (!on) releaseAll();
+  bar.style.display = on ? '' : 'none';
+}
+
 function releaseAll() {
   Object.assign(touch, { left: false, right: false, up: false, down: false, jump: false, action: false, run: false });
   document.querySelectorAll('#touch .on').forEach((el) => el.classList.remove('on'));

@@ -97,6 +97,7 @@ function snapshot(scene, centerX, floor) {
     scene.game.renderer.snapshotArea(x, y, w, h, (image) => {
       if (scene.textures.exists('winner-photo')) scene.textures.remove('winner-photo');
       scene.textures.addImage('winner-photo', image);
+      scene.winnerPhoto = image; // kept for the home screen once the level is finished
       resolve('winner-photo');
     });
   });
