@@ -5,14 +5,14 @@ import heroJump from '../art/hero/jump.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { hasSeenIntro, levelsDone, levelPhoto } from '../progress.js';
 import {
-  preloadHome, cardKey, LEVEL_COUNT, CARD_AT, CARD_WINDOW, SELECT_OFFSET, MONITOR_SCREEN, TITLE_PANEL,
+  preloadHome, cardKey, LEVEL_COUNT, CARD_AT, CARD_WINDOW, SELECT_OFFSET, HINT_AREA, TITLE_PANEL,
 } from '../art/home.js';
 
 const FONT = '"Press Start 2P", monospace';
 const GOLD = '#ffd34a';
 // The levels that exist so far; the others can be unlocked but say "coming soon".
 const BUILT = new Set([1]);
-const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk, under the monitor
+const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk
 
 // The home screen and level menu: Boris's music studio. The 10 levels hang as instant photos on two
 // strings. Finished levels show their winner photo from Felix, the next level has a play arrow, and
@@ -33,7 +33,7 @@ export default class HomeScene extends Phaser.Scene {
 
   create(data) {
     this.add.image(0, 0, 'home-studio').setOrigin(0);
-    // On a phone the cards are tapped directly: tap one to pick it, tap it again (or the monitor) to play.
+    // On a phone the cards are tapped directly: tap one to pick it, tap it again (or the level hint) to play.
     showTouchControls(false);
     this.events.once('shutdown', () => showTouchControls(true));
     this.controls = new Controls(this);
@@ -127,7 +127,7 @@ export default class HomeScene extends Phaser.Scene {
     });
   }
 
-  // The game's name on the empty panel above the monitor.
+  // The game's name on the empty panel at the top of the wall.
   addTitle() {
     const cx = TITLE_PANEL.x + TITLE_PANEL.w / 2;
     const cy = TITLE_PANEL.y + TITLE_PANEL.h / 2;
@@ -135,11 +135,11 @@ export default class HomeScene extends Phaser.Scene {
       .setOrigin(0.5).setShadow(2, 2, '#12081c', 0, false, true).setDepth(2);
   }
 
-  // A short hint on the monitor, over a dark box: which level, and how to play it.
+  // A short hint on the wall under the title, in a dark box: which level, and how to play it.
   addHint() {
-    const cx = MONITOR_SCREEN.x + MONITOR_SCREEN.w / 2;
-    const cy = MONITOR_SCREEN.y + MONITOR_SCREEN.h / 2;
-    this.add.rectangle(cx, cy, MONITOR_SCREEN.w - 6, 30, 0x12081c, 0.88).setDepth(2)
+    const cx = HINT_AREA.x + HINT_AREA.w / 2;
+    const cy = HINT_AREA.y + HINT_AREA.h / 2;
+    this.add.rectangle(cx, cy, HINT_AREA.w - 10, 34, 0x221533).setStrokeStyle(2, 0xe0b45c).setDepth(2)
       .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.play());
     const style = { fontFamily: FONT, fontSize: '8px', align: 'center' };
     this.hintTop = this.add.text(cx, cy - 6, '', { ...style, color: GOLD }).setOrigin(0.5).setDepth(3);

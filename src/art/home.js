@@ -16,7 +16,8 @@ export const CARD_AT = [
 // The photo window on a finished card (transparent; the level's winner photo goes under it).
 export const CARD_WINDOW = { x: 4, y: 10, w: 32, h: 22 };
 export const SELECT_OFFSET = { x: -3, y: 3 };
-export const MONITOR_SCREEN = { x: 256, y: 150, w: 128, h: 44 };
+// Free white wall under the title, between the panels: the level hint goes here, in a dark box.
+export const HINT_AREA = { x: 252, y: 146, w: 136, h: 52 };
 export const TITLE_PANEL = { x: 268, y: 64, w: 103, h: 69 };
 
 export const cardKey = (level, state) => `home-card-${level}-${state}`;
