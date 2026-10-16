@@ -1,4 +1,5 @@
-// Felix the Photographer, from Sandro's reference photo: all in black, a huge mustache and a flash
+// Felix the Photographer, from Sandro's reference photo: blond hair, a black tee with a neon yellow
+// ring, a huge mustache and a flash
 // camera. Drawn at the hero's pixel size by the art thread, shown at half size. The walk and shoot
 // poses face left (the idle pose faces you).
 import idle from './felix/idle.png';
