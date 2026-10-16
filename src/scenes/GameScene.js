@@ -474,13 +474,20 @@ export default class GameScene extends Phaser.Scene {
   }
 }
 
-// The winner photo shrunk to the size of a card's window on the home screen, as a small PNG to save.
+// The card's window is tiny, so its copy of the winner photo is cropped in closer, to the two of them
+// from the knees up (fractions of the photo, kept at the window's shape).
+const CARD_CROP = { x: 0.16, y: 0.04, w: 0.68 };
+
+// The winner photo cropped and shrunk to the size of a card's window on the home screen, as a small
+// PNG to save.
 function shrinkPhoto(image) {
   const canvas = document.createElement('canvas');
   canvas.width = CARD_WINDOW.w;
   canvas.height = CARD_WINDOW.h;
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const sw = image.width * CARD_CROP.w;
+  const sh = (sw * CARD_WINDOW.h) / CARD_WINDOW.w;
+  ctx.drawImage(image, image.width * CARD_CROP.x, image.height * CARD_CROP.y, sw, sh, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL('image/png');
 }
