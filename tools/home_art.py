@@ -41,8 +41,10 @@ CARD = ['#bdbaba', '#dcdada', '#f4f3f1', '#fdfefd']
 DULL = ['#5a5560', '#77727c', '#8e8994', '#a29ea6']
 
 MONITOR_SCREEN = (293, 224, 54, 26)        # x, y, w, h of the monitor's screen on the desk
-HINT_AREA = (252, 146, 136, 52)            # free wall between the panels, under the title: room for the level hint
-TITLE_PANEL = (268, 64, 103, 69)           # the panel pair above the desk: room for the game title
+HINT_AREA = (200, 312, 240, 36)            # free floor in front of Boris: room for the level hint
+TITLE_PANEL = (268, 64, 103, 65)           # the top two panels in the middle: room for the game title
+PLAY_POS = (303, 146)                      # top-left of play-button*.png (34 x 34) on the lower middle panels
+PLAY_SELECT_OFFSET = (-5, -5)              # play-select-*.png (44 x 44) goes at PLAY_POS + this
 FURNITURE_FOOT = 300                       # desk, speakers and chair stand on Boris's line (his feet at y=300)
 DESK_HEIGHT = 38                           # desk top this far above the feet
 DESK_X0, DESK_X1 = 250, 390
@@ -315,7 +317,7 @@ def studio():
     # Acoustic panels: two big groups and a smaller pair behind the monitor.
     panel_grid(c, 48, 60, 2, 2, 100, 74)
     panel_grid(c, 392, 60, 2, 2, 100, 74)
-    panel_grid(c, 268, 64, 2, 1, 52, 70)
+    panel_grid(c, 268, 64, 2, 2, 52, 66)
     # Bass traps in the corners.
     bass_trap(c, 0, 34, False)
     bass_trap(c, 606, 640, True)
@@ -378,7 +380,103 @@ def studio():
     return c
 
 
-def preview(studio_img, cards_dir, sample_photo):
+# ---------- the music: play button and song menu ----------
+
+def play_button(on):
+    """A round button like a record: gold rim, dark grooves, white play arrow (or gold pause bars while music plays)."""
+    c = Canvas(34, 34)
+    ys, xs = np.mgrid[0:34, 0:34]
+    r = np.hypot(xs + .5 - 17, ys + .5 - 17)
+    disc = r < 16
+    put(c, disc, GILT[1]); put(c, disc & (xs + ys < 28), GILT[2]); put(c, disc & (xs + ys < 16), GILT[3])
+    inner = r < 13
+    put(c, inner, UI_FILL)
+    put(c, inner & (r > 6) & (np.round(r) % 2 == 0), '#2e2244')                  # grooves
+    put(c, inner & (r > 6) & (r < 12) & (abs(xs - ys) < 2) & (xs < 17), '#4a3a66')   # a shine on the grooves
+    outline_of(c, disc)
+    if on:
+        for x in (12, 19):
+            c.rect(x, 10, 4, 14, GILT[2]); c.rect(x, 10, 4, 1, GILT[3]); c.rect(x, 10, 1, 14, GILT[3])
+            frame(c, x - 1, 9, 6, 16, OUTLINE)
+    else:
+        tri = np.zeros((34, 34), bool)
+        for i in range(15):
+            tri[10 + i, 13:13 + 1 + (7 - abs(i - 7))] = True
+        put(c, tri, '#fdfefd'); put(c, tri & (ys > 19), CARD[1])
+        outline_of(c, tri)
+    return c
+
+
+def play_select(f):
+    """The blinking gold ring around the play button when it is chosen."""
+    c = Canvas(44, 44)
+    ys, xs = np.mgrid[0:44, 0:44]
+    r = np.hypot(xs + .5 - 22, ys + .5 - 22)
+    col, inner = (GILT[3], GILT[1]) if f == 0 else (LED[2], LED[1])
+    put(c, (r < 21) & (r >= 19), col); put(c, (r < 19) & (r >= 18), inner)
+    put(c, (r < 22) & (r >= 21), OUTLINE); put(c, (r < 18) & (r >= 17), OUTLINE)
+    return c
+
+
+SONG_MENU = (304, 168)
+SONG_TITLE_BOX = (52, 10, 240, 20)         # where the game writes "PICK A SONG"
+SONG_ROWS = [(24, 36 + 25 * i, 266, 22) for i in range(5)]   # x, y, w, h of each song row; write the name from x+28
+SONG_ROW_SELECT_OFFSET = (-10, -2)         # song-row-select-*.png goes at the row's x, y + this (its arrow sits left of the row)
+
+
+def song_menu():
+    """The song picker: the dialog look with a small record in the corner, five rows with a note at the left."""
+    w, h = SONG_MENU
+    c = Canvas(w, h)
+    c.rect(1, 1, w - 2, h - 2, UI_FILL)
+    frame(c, 2, 2, w - 4, h - 4, GILT[2], t=2)
+    c.rect(2, 2, w - 4, 1, GILT[3]); c.rect(2, 2, 1, h - 4, GILT[3])
+    c.rect(2, h - 3, w - 4, 1, GILT[1]); c.rect(w - 3, 2, 1, h - 4, GILT[1])
+    frame(c, 0, 0, w, h, OUTLINE)
+    for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
+        c.a[y, x, 3] = 0
+    # Small record in the top-left corner of the header.
+    ys, xs = np.mgrid[0:h, 0:w]
+    r = np.hypot(xs + .5 - 28, ys + .5 - 20)
+    put(c, r < 11, '#0e0c12'); put(c, (r < 11) & (r > 5) & (np.round(r) % 2 == 0), '#2a2532')
+    put(c, r < 4, RED[1]); put(c, r < 1.2, '#0e0c12'); put(c, (r < 11) & (r > 7) & (abs(xs - ys - 8) < 2) & (xs < 28), '#5a5466')
+    outline_of(c, r < 11)
+    c.rect(10, 32, w - 20, 1, GILT[1])
+    for i, (x, y, rw, rh) in enumerate(SONG_ROWS):
+        c.rect(x, y, rw, rh, '#2a1d3e' if i % 2 == 0 else '#251a37')
+        note(c, x + 8, y + 4)
+    return c
+
+
+def note(c, x, y):
+    """A small eighth note in gold, 10 x 14."""
+    c.rect(x + 6, y, 2, 11, GILT[2]); c.rect(x + 6, y, 4, 2, GILT[2]); c.rect(x + 8, y + 2, 2, 2, GILT[2])
+    c.rect(x + 1, y + 9, 6, 4, GILT[2]); c.rect(x + 2, y + 9, 3, 1, GILT[3])
+
+
+def song_row_select(f):
+    """Gold bar around the chosen song row, with a little arrow on the left."""
+    rw, rh = SONG_ROWS[0][2] + 4, SONG_ROWS[0][3] + 4
+    c = Canvas(rw + 8, rh)
+    col = GILT[3] if f == 0 else LED[2]
+    frame(c, 8, 0, rw, rh, OUTLINE); frame(c, 9, 1, rw - 2, rh - 2, col, t=2)
+    for i in range(7):
+        c.rect(0, rh // 2 - 3 + i, 4 - abs(i - 3), 1, col)
+    return c
+
+
+def eq(f):
+    """Three dancing bars that mark the song that is playing (and sit next to the play button). 12 x 12, 3 frames."""
+    c = Canvas(12, 12)
+    heights = [(6, 10, 4), (10, 4, 8), (4, 8, 10)][f]
+    for i, hh in enumerate(heights):
+        x = 1 + i * 4
+        c.rect(x, 11 - hh, 2, hh, LED[1]); c.rect(x, 11 - hh, 2, 1, LED[2])
+    c.outline()
+    return c
+
+
+def preview(studio_img, cards_dir, sample_photo, select=True):
     """The backdrop with levels 1-3 done (Felix's sample photo in the windows), level 4 open and selected."""
     base = Image.fromarray(studio_img.a, 'RGBA')
     ph = Image.open(sample_photo).convert('RGBA') if os.path.exists(sample_photo) else None
@@ -390,9 +488,28 @@ def preview(studio_img, cards_dir, sample_photo):
             base.alpha_composite(ph.resize((ww, wh), Image.LANCZOS), (x + wx, y + wy))
         im = Image.open(os.path.join(cards_dir, f'card-{lv:02d}-{state}.png'))
         base.alpha_composite(im, (x, y))
+    base.alpha_composite(Image.fromarray(play_button(False).a, 'RGBA'), PLAY_POS)
     sel = Image.open(os.path.join(os.path.dirname(cards_dir), 'select-0.png'))
     x, y = CARD_POS[3]
-    base.alpha_composite(sel, (x + SELECT_OFFSET[0], y + SELECT_OFFSET[1]))
+    if select:
+        base.alpha_composite(sel, (x + SELECT_OFFSET[0], y + SELECT_OFFSET[1]))
+    return base.resize((W * 2, H * 2), Image.NEAREST)
+
+
+
+def preview_music(studio_img, out):
+    """The play button chosen and the song menu open over the darkened studio, song 2 playing."""
+    base = preview(studio_img, os.path.join(out, 'cards'), os.path.join(out, 'sample-photo.png'), select=False).resize((W, H), Image.NEAREST)
+    base.alpha_composite(Image.fromarray(play_button(True).a, 'RGBA'), PLAY_POS)
+    base.alpha_composite(Image.fromarray(play_select(0).a, 'RGBA'), (PLAY_POS[0] + PLAY_SELECT_OFFSET[0], PLAY_POS[1] + PLAY_SELECT_OFFSET[1]))
+    dim = Image.new('RGBA', base.size, (14, 10, 22, 150))
+    base.alpha_composite(dim)
+    mw, mh = SONG_MENU
+    mx, my = (W - mw) // 2, (H - mh) // 2
+    base.alpha_composite(Image.fromarray(song_menu().a, 'RGBA'), (mx, my))
+    x, y, _, _ = SONG_ROWS[1]
+    base.alpha_composite(Image.fromarray(song_row_select(0).a, 'RGBA'), (mx + x + SONG_ROW_SELECT_OFFSET[0], my + y + SONG_ROW_SELECT_OFFSET[1]))
+    base.alpha_composite(Image.fromarray(eq(0).a, 'RGBA'), (mx + x + SONG_ROWS[1][2] - 18, my + y + 5))
     return base.resize((W * 2, H * 2), Image.NEAREST)
 
 
@@ -407,7 +524,16 @@ def main():
             card(lv, state).save(os.path.join(cards, f'card-{lv:02d}-{state}.png'))
     for f in (0, 1):
         select_frame(f).save(os.path.join(out, f'select-{f}.png'))
+    for on in (False, True):
+        play_button(on).save(os.path.join(out, 'play-button-on.png' if on else 'play-button.png'))
+    for f in (0, 1):
+        play_select(f).save(os.path.join(out, f'play-select-{f}.png'))
+        song_row_select(f).save(os.path.join(out, f'song-row-select-{f}.png'))
+    for f in range(3):
+        eq(f).save(os.path.join(out, f'eq-{f}.png'))
+    song_menu().save(os.path.join(out, 'song-menu.png'))
     preview(s, cards, os.path.join(out, 'sample-photo.png')).save(os.path.join(out, 'preview.png'))
+    preview_music(s, out).save(os.path.join(out, 'preview-music.png'))
     print('saved to', out, 'card positions:', CARD_POS)
 
 
