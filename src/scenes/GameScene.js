@@ -414,7 +414,7 @@ export default class GameScene extends Phaser.Scene {
     cam.fadeOut(250);
     cam.once('camerafadeoutcomplete', () => {
       this.events.once('wake', (_sys, result) => this.leaveBonus(result));
-      this.scene.launch('bonus', { big: player.big, masked: player.masked, played: this.bonusPlayed });
+      this.scene.launch('bonus', { level: this.level, big: player.big, masked: player.masked, played: this.bonusPlayed });
       this.scene.sleep();
     });
   }

@@ -6,6 +6,8 @@ import { BONUS, GAME_WIDTH, PLAYER, ZOOM } from '../config.js';
 import { DUCK_SCALE } from '../art/sprites.js';
 import { preloadBonus, BONUS_SCALE, POPUP_TEXT_BOX, PORTRAIT_INSET } from '../art/bonus.js';
 import { addExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
+import { preloadNuggets } from '../art/afterparty.js';
+import { hasNugget, markNugget } from '../progress.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -24,8 +26,9 @@ const CELL_COLOR = 0x221533;
 // The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
 // Jump on the music button for the boss's beat, on the timer button to start the 15 seconds
 // (after a yes/no popup); the gate opens and every duck you grab uncovers a piece of the portrait.
-// When time is up the ducks vanish and the whole portrait shows. Leave through the door (up).
-// Started by GameScene with { big, masked, played }; wakes GameScene with { ducks, played }.
+// When time is up the ducks vanish and the whole portrait shows. Catch every duck in time and you
+// win the level's golden chicken nugget. Leave through the door (up).
+// Started by GameScene with { level, big, masked, played }; wakes GameScene with { ducks, played }.
 export default class BonusScene extends Phaser.Scene {
   constructor() {
     super('bonus');
@@ -33,6 +36,7 @@ export default class BonusScene extends Phaser.Scene {
 
   preload() {
     preloadBonus(this);
+    preloadNuggets(this);
   }
 
   create(data) {
@@ -42,6 +46,7 @@ export default class BonusScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_W, 180, true, true, false, true); // no ceiling
     this.state = data.played ? 'done' : 'ready';
     this.collected = 0;
+    this.level = data.level ?? 1;
 
     this.add.tileSprite(0, 0, WORLD_W / BONUS_SCALE, 180 / BONUS_SCALE, 'bonus-lounge').setOrigin(0).setScale(BONUS_SCALE);
     this.addFloor();
@@ -219,6 +224,9 @@ export default class BonusScene extends Phaser.Scene {
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeLeft = BONUS.timeLimit;
     this.timeText = text(GAME_WIDTH - 6, 15, this.state === 'done' ? '0' : String(this.timeLeft), 1);
+    // This level's golden nugget: an empty slot until every duck is caught in time.
+    this.nuggetIcon = this.add.image(ux + left + 3, uy + 20, hasNugget(this.level) ? 'nugget-icon' : 'nugget-slot')
+      .setScale(0.5).setScrollFactor(0).setDepth(10);
   }
 
   // "Start the timer?" with YES and NO. Left/right picks; down, jump, Space or Enter confirms; or tap.
@@ -291,6 +299,45 @@ export default class BonusScene extends Phaser.Scene {
     this.tweens.add({ targets: duck.cover, alpha: 0, duration: 120 });
     this.collected += 1;
     this.countText.setText(`x${String(this.collected).padStart(2, '0')}`);
+    if (this.collected === PORTRAIT.cols * PORTRAIT.rows) this.winNugget();
+  }
+
+  // Every duck caught before the time ran out: the level's golden chicken nugget pops up, shines,
+  // and flies into its slot in the corner.
+  winNugget() {
+    this.state = 'done';
+    this.clock?.remove();
+    markNugget(this.level);
+    const { x: ux, y: uy } = this.ui;
+    const nugget = this.add.image(ux + GAME_WIDTH / 2, uy + 122, 'nugget').setScrollFactor(0).setDepth(12).setScale(0);
+    // The glint sweeps over it, then a short rest.
+    const frames = ['nugget-shine-0', 'nugget-shine-1', 'nugget-shine-2', 'nugget', 'nugget', 'nugget'];
+    let frame = 0;
+    const shine = this.time.addEvent({
+      delay: 120,
+      loop: true,
+      callback: () => nugget.setTexture(frames[(frame = (frame + 1) % frames.length)]),
+    });
+    this.tweens.add({ targets: nugget, scale: 1, y: uy + 112, duration: 450, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: nugget, y: uy + 108, delay: 450, duration: 400, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
+    this.banner('ALL DUCKS!\n\nGOLDEN NUGGET', 2600);
+    this.time.delayedCall(2600, () => {
+      shine.remove();
+      nugget.setTexture('nugget');
+      this.tweens.add({
+        targets: nugget,
+        x: this.nuggetIcon.x,
+        y: this.nuggetIcon.y,
+        scale: 0.5,
+        duration: 450,
+        ease: 'Quad.easeIn',
+        onComplete: () => {
+          nugget.destroy();
+          this.nuggetIcon.setTexture('nugget-icon');
+          this.tweens.add({ targets: this.nuggetIcon, scale: 1, duration: 120, yoyo: true });
+        },
+      });
+    });
   }
 
   // The ducks that are left vanish and the rest of the portrait fades in, piece by piece.

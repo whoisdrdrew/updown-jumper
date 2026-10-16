@@ -25,11 +25,11 @@ const LEVELS = 'updown-jumper.levels';
 function readLevels() {
   try {
     const saved = JSON.parse(localStorage.getItem(LEVELS));
-    if (saved && Array.isArray(saved.done)) return { done: saved.done, photos: saved.photos || {} };
+    if (saved && Array.isArray(saved.done)) return { done: saved.done, photos: saved.photos || {}, nuggets: saved.nuggets || [] };
   } catch {
     // Blocked or broken: start from nothing.
   }
-  return { done: [], photos: {} };
+  return { done: [], photos: {}, nuggets: [] };
 }
 
 // How many levels in a row are finished, from level 1: the next one is the one to play.
@@ -48,9 +48,29 @@ export function markLevelDone(level, photo) {
   const saved = readLevels();
   if (!saved.done.includes(level)) saved.done.push(level);
   if (photo) saved.photos[level] = photo; // a replay's photo replaces the old one
+  save(saved);
+}
+
+function save(saved) {
   try {
     localStorage.setItem(LEVELS, JSON.stringify(saved));
   } catch {
     // Not saved; the home screen just won't remember it after a reload.
   }
+}
+
+// The golden chicken nuggets, one per level, won by catching every duck in its VIP room in time.
+// All 10 unlock the Afterparty ticket.
+export function hasNugget(level) {
+  return readLevels().nuggets.includes(level);
+}
+
+export function nuggetCount() {
+  return readLevels().nuggets.length;
+}
+
+export function markNugget(level) {
+  const saved = readLevels();
+  if (!saved.nuggets.includes(level)) saved.nuggets.push(level);
+  save(saved);
 }

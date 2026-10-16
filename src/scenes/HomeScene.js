@@ -3,7 +3,8 @@ import Controls from '../player/Controls.js';
 import heroIdle from '../art/hero/idle.png';
 import heroJump from '../art/hero/jump.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
-import { hasSeenIntro, levelsDone, levelPhoto } from '../progress.js';
+import { hasSeenIntro, levelsDone, levelPhoto, hasNugget, nuggetCount } from '../progress.js';
+import { preloadNuggets, NUGGET_COUNT } from '../art/afterparty.js';
 import MenuMusic from '../audio/MenuMusic.js';
 import { SONGS, SONG_BPM } from '../audio/songs.js';
 import {
@@ -16,8 +17,12 @@ const GOLD = '#ffd34a';
 // The levels that exist so far; the others can be unlocked but say "coming soon".
 const BUILT = new Set([1]);
 const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk
-// Left/right steps through these in order: the levels on the left string, the play button, the right string.
-const SLOTS = [1, 2, 3, 4, 5, 'music', 6, 7, 8, 9, 10];
+// Left/right steps through these in order: the levels on the left string, the play button, the right
+// string, then the Afterparty ticket.
+const SLOTS = [1, 2, 3, 4, 5, 'music', 6, 7, 8, 9, 10, 'ticket'];
+// In the empty bottom halves of the two boards: the golden nugget counter (left) and the ticket (right).
+const NUGGET_ROW = { x: 148, y: 172, step: 16 }; // centre of the row of 10
+const TICKET_AT = { x: 492, y: 168 }; // centre
 
 // The home screen and level menu: Boris's music studio. The 10 levels hang as instant photos on two
 // strings. Finished levels show their winner photo from Felix, the next level has a play arrow, and
@@ -33,6 +38,7 @@ export default class HomeScene extends Phaser.Scene {
 
   preload() {
     preloadHome(this);
+    preloadNuggets(this);
     this.load.image('home-boris', heroIdle);
     this.load.image('home-boris-jump', heroJump);
   }
@@ -56,6 +62,7 @@ export default class HomeScene extends Phaser.Scene {
     this.addTitle();
     this.addHint();
     this.addPlayButton();
+    this.addNuggets();
     this.selectFrame = this.add.image(0, 0, 'home-select-0').setOrigin(0).setDepth(3);
     this.playSelect = this.add.image(PLAY_POS.x + PLAY_SELECT_OFFSET.x, PLAY_POS.y + PLAY_SELECT_OFFSET.y, 'home-play-select-0')
       .setOrigin(0).setDepth(3);
@@ -68,6 +75,7 @@ export default class HomeScene extends Phaser.Scene {
         const n = this.blink ? 1 : 0;
         this.selectFrame.setTexture(`home-select-${n}`);
         this.playSelect.setTexture(`home-play-select-${n}`);
+        this.ticketSelect.setAlpha(this.blink ? 1 : 0.4);
         this.songs?.select.setTexture(`home-song-select-${n}`);
       },
     });
@@ -195,14 +203,46 @@ export default class HomeScene extends Phaser.Scene {
     });
   }
 
+  // The golden nuggets won so far, in a row of 10 slots, and the Afterparty ticket: grey with a
+  // padlock until all 10 are won.
+  addNuggets() {
+    const won = nuggetCount();
+    this.unlocked = won >= NUGGET_COUNT;
+    const style = { fontFamily: FONT, fontSize: '8px', color: GOLD };
+    this.add.text(NUGGET_ROW.x, NUGGET_ROW.y - 18, 'GOLDEN NUGGETS', style).setOrigin(0.5).setDepth(2)
+      .setShadow(1, 1, '#12081c', 0, false, true);
+    for (let level = 1; level <= NUGGET_COUNT; level++) {
+      const x = NUGGET_ROW.x + (level - 1 - (NUGGET_COUNT - 1) / 2) * NUGGET_ROW.step;
+      this.add.image(Math.round(x), NUGGET_ROW.y, hasNugget(level) ? 'nugget-icon' : 'nugget-slot').setDepth(2);
+    }
+    this.add.text(NUGGET_ROW.x, NUGGET_ROW.y + 18, `${won}/${NUGGET_COUNT}`, { ...style, color: '#ffffff' }).setOrigin(0.5).setDepth(2);
+    this.ticket = this.add.image(TICKET_AT.x, TICKET_AT.y, this.unlocked ? 'ticket' : 'ticket-locked').setDepth(2)
+      .setInteractive({ useHandCursor: true });
+    this.ticket.on('pointerdown', () => {
+      if (this.songs) return;
+      if (this.selected === 'ticket') this.play();
+      else this.select(SLOTS.indexOf('ticket'));
+    });
+    this.ticketSelect = this.add.rectangle(TICKET_AT.x, TICKET_AT.y, 128, 72).setStrokeStyle(2, 0xffd34a).setDepth(3);
+    if (this.unlocked) this.tweens.add({ targets: this.ticket, angle: { from: -2, to: 2 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
   select(slot) {
     this.slot = slot;
     const item = SLOTS[slot];
     this.selected = item;
     const onMusic = item === 'music';
-    this.selectFrame.setVisible(!onMusic);
+    const onTicket = item === 'ticket';
+    this.selectFrame.setVisible(!onMusic && !onTicket);
     this.playSelect.setVisible(onMusic);
+    this.ticketSelect.setVisible(onTicket);
     const tap = touch.enabled ? 'TAP' : 'ENTER';
+    if (onTicket) {
+      this.boris.setFlipX(false);
+      this.hintTop.setText('AFTERPARTY');
+      this.hintBottom.setText(this.unlocked ? `${tap} TO GO IN` : `WIN ALL ${NUGGET_COUNT} NUGGETS`);
+      return;
+    }
     if (onMusic) {
       this.boris.setFlipX(false);
       this.hintTop.setText('MENU MUSIC');
@@ -221,6 +261,11 @@ export default class HomeScene extends Phaser.Scene {
     if (this.starting) return;
     const level = this.selected;
     if (level === 'music') return this.openSongs();
+    if (level === 'ticket') {
+      if (this.unlocked) return this.start('afterparty');
+      this.tweens.add({ targets: this.ticket, x: TICKET_AT.x + 2, duration: 50, yoyo: true, repeat: 3 });
+      return;
+    }
     if (level > this.reachable || !BUILT.has(level)) {
       const card = this.cards[level];
       this.tweens.add({ targets: card, x: card.x + 2, duration: 50, yoyo: true, repeat: 3 });

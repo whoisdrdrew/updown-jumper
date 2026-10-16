@@ -4,6 +4,7 @@ import HomeScene from './scenes/HomeScene.js';
 import IntroScene from './scenes/IntroScene.js';
 import GameScene from './scenes/GameScene.js';
 import BonusScene from './scenes/BonusScene.js';
+import AfterpartyScene from './scenes/AfterpartyScene.js';
 import { setupTouchControls, touch } from './touch/TouchControls.js';
 
 function startGame() {
@@ -23,7 +24,7 @@ function startGame() {
       arcade: { gravity: { y: PHYSICS.gravity }, debug: false },
     },
     // The home screen (level menu) first; the story before level 1; the bonus room behind the VIP door.
-    scene: [HomeScene, IntroScene, GameScene, BonusScene],
+    scene: [HomeScene, IntroScene, GameScene, BonusScene, AfterpartyScene],
   });
 
   // Handy for debugging from the browser console.
