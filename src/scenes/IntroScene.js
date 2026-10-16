@@ -162,7 +162,7 @@ export default class IntroScene extends Phaser.Scene {
     await this.wait(300);
     await this.say('boris', 'BORIS', 'Do you know where Ginger is?');
     this.tweens.add({ targets: horse, x: horse.x + 1, duration: 60, yoyo: true, repeat: 5 });
-    await this.say('horse', 'HORSE', "I can't speak. I'm a horse.");
+    await this.say('horse', 'LEGO', "I can't speak. I'm a horse.");
     await this.say('boris', 'BORIS', 'Right, forgot about that.');
 
     // He notices the note and picks it up.
