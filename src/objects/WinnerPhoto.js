@@ -28,12 +28,10 @@ export default function takeWinnerPhoto(scene, player, boss, done) {
     await wait(500);
 
     // The boss lands on Boris's other side, arm round his shoulder.
-    let centerX = player.x;
     if (boss?.active) {
       await Promise.race([until(() => player.body.blocked.down), wait(1000)]);
       const bossX = player.x - side * PAIR_GAP;
       await boss.standForPhoto(bossX, player.body.bottom, side < 0);
-      centerX = (player.x + bossX) / 2;
       await wait(250);
     }
 
@@ -50,7 +48,7 @@ export default function takeWinnerPhoto(scene, player, boss, done) {
     // Camera up... snap.
     felix.setTexture('felix-shoot');
     await wait(350);
-    const snap = await snapshot(scene, centerX, player.body.bottom);
+    const snap = await snapshot(scene, boss?.active ? [player, boss] : [player]);
     const mirror = side < 0 ? -1 : 1; // flipped to face right when he came from the left
     const burst = scene.add.image(felix.x + mirror * FELIX_FLASH.x * FELIX_SCALE, felix.y + FELIX_FLASH.y * FELIX_SCALE, 'felix-flash-0')
       .setScale(FELIX_SCALE).setDepth(3);
@@ -83,21 +81,43 @@ function tween(scene, config) {
   return new Promise((resolve) => scene.tweens.add({ ...config, onComplete: resolve }));
 }
 
-// Copies the screen around (centerX, floor) (the photo window's size at ZOOM 2 is 80x56 of the world)
-// into a texture.
-function snapshot(scene, centerX, floor) {
+// Framed tight on the people in it (Boris and the beaten boss): a little room left and right of
+// them and from just above the taller head to just below their feet, widened to the photo's 10:7.
+const MARGIN_X = 8; // world pixels
+const MARGIN_TOP = 4;
+const MARGIN_BOTTOM = 3;
+
+// Copies that part of the screen and scales it up (crisp, no smoothing) to the photo window's size.
+function snapshot(scene, people) {
   const cam = scene.cameras.main;
-  const w = PHOTO_WINDOW.w;
-  const h = PHOTO_WINDOW.h;
-  const sx = (centerX - cam.worldView.x) * ZOOM;
-  const sy = (floor - 22 - cam.worldView.y) * ZOOM;
-  const x = Math.round(Math.min(Math.max(sx - w / 2, 0), GAME_WIDTH * ZOOM - w));
-  const y = Math.round(Math.min(Math.max(sy - h / 2, 0), GAME_HEIGHT * ZOOM - h));
+  const boxes = people.map((p) => p.getBounds());
+  const left = Math.min(...boxes.map((b) => b.left)) - MARGIN_X;
+  const right = Math.max(...boxes.map((b) => b.right)) + MARGIN_X;
+  const top = Math.min(...boxes.map((b) => b.top)) - MARGIN_TOP;
+  const bottom = Math.max(...boxes.map((b) => b.bottom)) + MARGIN_BOTTOM;
+  const ratio = PHOTO_WINDOW.w / PHOTO_WINDOW.h;
+  let worldW = right - left;
+  let worldH = bottom - top;
+  if (worldW / worldH < ratio) worldW = worldH * ratio;
+  else worldH = worldW / ratio;
+  const cx = (left + right) / 2;
+  const cy = (top + bottom) / 2;
+  // In canvas pixels, kept on the canvas.
+  const w = Math.round(worldW * ZOOM);
+  const h = Math.round(worldH * ZOOM);
+  const x = Math.round(Math.min(Math.max((cx - cam.worldView.x) * ZOOM - w / 2, 0), GAME_WIDTH * ZOOM - w));
+  const y = Math.round(Math.min(Math.max((cy - cam.worldView.y) * ZOOM - h / 2, 0), GAME_HEIGHT * ZOOM - h));
   return new Promise((resolve) => {
     scene.game.renderer.snapshotArea(x, y, w, h, (image) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = PHOTO_WINDOW.w;
+      canvas.height = PHOTO_WINDOW.h;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       if (scene.textures.exists('winner-photo')) scene.textures.remove('winner-photo');
-      scene.textures.addImage('winner-photo', image);
-      scene.winnerPhoto = image; // kept for the home screen once the level is finished
+      scene.textures.addCanvas('winner-photo', canvas);
+      scene.winnerPhoto = canvas; // kept for the home screen once the level is finished
       resolve('winner-photo');
     });
   });
