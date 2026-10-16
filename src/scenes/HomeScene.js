@@ -16,6 +16,9 @@ const FONT = '"Press Start 2P", monospace';
 const GOLD = '#ffd34a';
 // The levels that exist so far; the others can be unlocked but say "coming soon".
 const BUILT = new Set([1]);
+// For now the Afterparty opens even while the ticket is still locked (it keeps its padlock look),
+// so it can be seen before 10 levels exist. Set to false to make the 10 nuggets required.
+const AFTERPARTY_OPEN_EARLY = true;
 const BORIS_AT = { x: 300, floor: 300 }; // in front of his desk
 // Left/right steps through these in order: the levels on the left string, the play button, the right
 // string, then the Afterparty ticket.
@@ -241,7 +244,8 @@ export default class HomeScene extends Phaser.Scene {
     if (onTicket) {
       this.boris.setFlipX(false);
       this.hintTop.setText('AFTERPARTY');
-      this.hintBottom.setText(this.unlocked ? `${tap} TO GO IN` : `WIN ALL ${NUGGET_COUNT} NUGGETS`);
+      if (this.unlocked) this.hintBottom.setText(`${tap} TO GO IN`);
+      else this.hintBottom.setText(AFTERPARTY_OPEN_EARLY ? `${tap} TO PEEK IN` : `WIN ALL ${NUGGET_COUNT} NUGGETS`);
       return;
     }
     if (onMusic) {
@@ -263,7 +267,7 @@ export default class HomeScene extends Phaser.Scene {
     const level = this.selected;
     if (level === 'music') return this.openSongs();
     if (level === 'ticket') {
-      if (this.unlocked) return this.start('afterparty');
+      if (this.unlocked || AFTERPARTY_OPEN_EARLY) return this.start('afterparty');
       this.tweens.add({ targets: this.ticket, x: TICKET_AT.x + 2, duration: 50, yoyo: true, repeat: 3 });
       return;
     }
