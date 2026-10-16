@@ -14,7 +14,7 @@ const GOLD = '#ffd34a';
 // The story before level 1, played like the start of a Mario game: the player walks Boris, and
 // when he reaches certain spots the game takes over and the story plays out.
 //   bedroom: Boris wakes up, "Where is Ginger?", walk out of the door on the right.
-//   outside: walk up to the horse, the dialog, the note from the Guestlist King, storm off.
+//   outside (the stable): walk up to the horse, the dialog, the note from the Guestlist King, storm off.
 // It can't be skipped the first time; once level 1 has been reached a SKIP button shows.
 // The two rooms are this one scene, restarted with { room }.
 export default class IntroScene extends Phaser.Scene {
@@ -136,7 +136,7 @@ export default class IntroScene extends Phaser.Scene {
 
   async outside() {
     const img = (x, y, key, ox = 0, oy = 0) => this.add.image(x, y, `intro-${key}`).setOrigin(ox, oy).setScale(INTRO_SCALE);
-    img(0, 0, 'outside');
+    img(0, 0, 'stable'); // the horse's stable, indoors
     img(20, 75, 'villa-door-open');
     const horse = img(232, FLOOR, 'horse', 0.5, 1);
     this.time.addEvent({

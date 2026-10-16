@@ -21,7 +21,7 @@ Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), 
 
 On a phone or tablet the game fills the screen, and the controls are kept small and faint so they hide as little of it as possible (like Leo's Fortune). Put your left thumb down anywhere on the left 45% of the screen: a cross appears under it. Slide left or right to walk, slide further to run, slide down for the VIP door. If your thumb drifts, the cross follows it. On the right, B (shoot, hold to run) and A (jump) are small circles in the margin, but the whole bottom right of the screen is their touch area: its left half is B and its right half is A, and you can slide from one to the other. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.
 
-**Intro story**: the game starts in Boris's bedroom, like the start of a Mario game. He wakes up and wonders where Ginger is; walk him out of the door on the right. Outside, walk up to the horse and the story plays: the dialog, the note from the Guestlist King, and Boris storming off into level 1. Press up, Space, Enter or tap/click to move the dialog on (a press while text is typing shows it all). The first time it can't be skipped; once you've reached level 1 a SKIP button shows in the top right (or press Esc). That is remembered in the browser. Press S at any time to start the story over.
+**Intro story**: the game starts in Boris's bedroom, like the start of a Mario game. He wakes up and wonders where Ginger is; walk him out of the door on the right. In the stable, walk up to the horse and the story plays: the dialog, the note from the Guestlist King, and Boris storming off into level 1. Press up, Space, Enter or tap/click to move the dialog on (a press while text is typing shows it all). The first time it can't be skipped; once you've reached level 1 a SKIP button shows in the top right (or press Esc). That is remembered in the browser. Press S at any time to start the story over.
 
 Test level items:
 
@@ -52,7 +52,7 @@ Test level items:
 | `src/objects/Suitcase.js` | The suitcase with the mask at the start of a level. |
 | `src/levels/testLevel.js` | The test level, drawn as text (one character per tile). |
 | `src/art/` | Art. The hero, the little duck and the suitcase are cleaned from Sandro's art; the ride duck, tiles, items and backgrounds in `src/art/world/` are drawn by `tools/world_art.py` at the same pixel size (run `python3 tools/world_art.py` to redraw them). |
-| `src/scenes/IntroScene.js` | The intro story: bedroom and outside, the dialog box, speech bubble, letter and skip button. Pictures in `src/art/intro/`. |
+| `src/scenes/IntroScene.js` | The intro story: bedroom and the horse stable, the dialog box, speech bubble, letter and skip button. Pictures in `src/art/intro/`. |
 | `src/scenes/BonusScene.js` | The duck bonus room behind the VIP door: buttons, timer popup, trampoline and the portrait reveal. Art in `src/art/bonus/` (drawn by `tools/bonus_art.py`). |
 | `src/audio/BossBeat.js` | The music button's beat, made with Web Audio (no sound files). |
 | `src/progress.js` | What's remembered in the browser (whether the intro has been seen). |

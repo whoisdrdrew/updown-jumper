@@ -20,7 +20,7 @@ import letter from './intro/letter.png';
 import nextArrow0 from './intro/next-arrow-0.png';
 import nextArrow1 from './intro/next-arrow-1.png';
 import note from './intro/note.png';
-import outside from './intro/outside.png';
+import stable from './intro/stable.png';
 import portraitBoris from './intro/portrait-boris.png';
 import portraitBorisAngry from './intro/portrait-boris-angry.png';
 import portraitHorse from './intro/portrait-horse.png';
@@ -48,7 +48,7 @@ const IMAGES = {
   'next-arrow-0': nextArrow0,
   'next-arrow-1': nextArrow1,
   'note': note,
-  'outside': outside,
+  'stable': stable,
   'portrait-boris': portraitBoris,
   'portrait-boris-angry': portraitBorisAngry,
   'portrait-horse': portraitHorse,
