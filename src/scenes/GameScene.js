@@ -51,8 +51,9 @@ export default class GameScene extends Phaser.Scene {
     this.layer = layer;
     this.map = map;
 
-    // Open bottom edge: falling into a pit leaves the world.
-    this.physics.world.setBounds(0, 0, worldW, worldH, true, true, true, false);
+    // Open top and bottom edges: a jump can go a little past the top of the screen (no invisible
+    // ceiling), and falling into a pit leaves the world.
+    this.physics.world.setBounds(0, 0, worldW, worldH, true, true, false, false);
 
     this.controls = new Controls(this);
     this.player = new Player(this, start.x, start.y, this.controls);
@@ -299,7 +300,7 @@ export default class GameScene extends Phaser.Scene {
   startBossFight() {
     const { arena, player } = this;
     const cam = this.cameras.main;
-    this.physics.world.setBounds(arena.left, 0, GAME_WIDTH, this.worldH, true, true, true, false);
+    this.physics.world.setBounds(arena.left, 0, GAME_WIDTH, this.worldH, true, true, false, false);
     cam.stopFollow();
     cam.pan(arena.centerX, cam.midPoint.y, 500, 'Sine.easeInOut', false, (_c, done) => {
       if (!done) return;
@@ -341,7 +342,7 @@ export default class GameScene extends Phaser.Scene {
 
   endBossFight() {
     const cam = this.cameras.main;
-    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.worldH, true, true, true, false);
+    this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.worldH, true, true, false, false);
     cam.setBounds(0, 0, this.map.widthInPixels, this.worldH);
     this.bossHud.forEach((o) => o.destroy());
     const text = this.banner('YOU WIN!');

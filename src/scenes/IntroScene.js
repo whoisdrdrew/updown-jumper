@@ -32,7 +32,7 @@ export default class IntroScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     cam.centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
     createSprites(this);
-    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    this.physics.world.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT, true, true, false, true); // no ceiling
 
     this.controls = new Controls(this);
     this.playing = false; // true while the player steers Boris

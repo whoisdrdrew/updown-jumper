@@ -38,7 +38,7 @@ export default class BonusScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
-    this.physics.world.setBounds(0, 0, WORLD_W, 180);
+    this.physics.world.setBounds(0, 0, WORLD_W, 180, true, true, false, true); // no ceiling
     this.state = data.played ? 'done' : 'ready';
     this.collected = 0;
 
