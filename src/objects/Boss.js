@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOSS, GAME_WIDTH } from '../config.js';
+import { BOSS } from '../config.js';
 
 const SCALE = 0.5; // like the hero: one picture pixel is one screen pixel
 const CLOUD_OVERLAP = 12; // picture pixels of his bottom that sink into the steam cloud
@@ -83,7 +83,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   update(time) {
-    if (!this.active) return;
+    if (!this.active || this.mode === 'defeated') return;
     const t = time - this.modeAt;
     const player = this.scene.player;
     let target = null;
@@ -202,17 +202,26 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     const towel = scene.add.image(this.x, this.y - 8, 'solomun-towel').setScale(SCALE).setDepth(5);
     scene.tweens.add({ targets: towel, x: this.x + 40, y: this.y - 50, angle: 540, duration: 700, ease: 'Quad.easeOut' });
     scene.tweens.add({ targets: towel, y: this.arena.floor - 3, delay: 700, duration: 500, ease: 'Bounce.easeOut' });
-    // ...then floats up and out of the club.
-    scene.tweens.add({
-      targets: this,
-      y: this.y - GAME_WIDTH,
-      delay: 900,
-      duration: 1600,
-      ease: 'Quad.easeIn',
-      onComplete: () => {
-        this.emit('defeated');
-        this.destroy();
-      },
+    // ...and stays for the winner photo with Boris (WinnerPhoto.js).
+    scene.time.delayedCall(900, () => this.emit('defeated'));
+  }
+
+  // Beaten, he comes down next to Boris for the winner photo: a smile, a peace sign and his arm
+  // out round Boris's shoulder. The picture faces left with the arm out to the right; flipped, Boris
+  // stands on his left.
+  standForPhoto(x, floor, flip) {
+    this.setTexture('solomun-photo-pose').setFlipX(flip).setAngle(0);
+    return new Promise((resolve) => {
+      this.scene.tweens.add({
+        targets: this,
+        x,
+        y: floor - this.displayHeight / 2,
+        duration: 650,
+        ease: 'Quad.easeIn',
+        onComplete: () => {
+          this.scene.tweens.add({ targets: this, y: this.y - 3, duration: 90, yoyo: true, onComplete: resolve });
+        },
+      });
     });
   }
 }

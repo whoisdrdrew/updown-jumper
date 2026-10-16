@@ -349,7 +349,7 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => text.destroy());
     // Felix the Photographer takes the winner photo; the player waits until it's done.
     this.cutscene = true;
-    takeWinnerPhoto(this, this.player, () => { this.cutscene = false; });
+    takeWinnerPhoto(this, this.player, this.boss, () => { this.cutscene = false; });
   }
 
   // Standing on the VIP door's platform, right in front of it.

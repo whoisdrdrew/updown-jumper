@@ -34,6 +34,7 @@ import goalPole from './world/goal-pole.png';
 import solomunMeditate from './solomun/meditate.png';
 import solomunAttack from './solomun/attack.png';
 import solomunDefeat from './solomun/defeat.png';
+import solomunPhotoPose from './solomun/photo-pose.png';
 import solomunTowel from './solomun/towel.png';
 import solomunPortrait from './solomun/portrait.png';
 import solomunCloudBack0 from './solomun/cloud-back-0.png';
@@ -91,6 +92,7 @@ export function preloadSprites(scene) {
   scene.load.image('solomun-meditate', solomunMeditate);
   scene.load.image('solomun-attack', solomunAttack);
   scene.load.image('solomun-defeat', solomunDefeat);
+  scene.load.image('solomun-photo-pose', solomunPhotoPose);
   scene.load.image('solomun-towel', solomunTowel);
   scene.load.image('solomun-portrait', solomunPortrait);
   // The sauna-steam cloud he sits in: a back and a front layer, two bob frames each.

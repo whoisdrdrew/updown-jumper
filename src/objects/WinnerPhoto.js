@@ -2,12 +2,14 @@ import { GAME_WIDTH, GAME_HEIGHT, ZOOM } from '../config.js';
 import { FELIX_SCALE, FELIX_FLASH, PHOTO_WINDOW } from '../art/felix.js';
 
 const WALK_SPEED = 70;
-const DISTANCE = 72; // Felix stops this far from Boris, so the photo is all Boris
+const DISTANCE = 72; // Felix stops this far from Boris, so he stays out of the photo
+const PAIR_GAP = 16; // the beaten boss stands this close beside Boris
 
-// After an end boss is beaten: Boris strikes a victory pose, Felix the Photographer walks in, raises
-// his camera, a white flash and a click, and the winner photo pops up over a dimmed screen.
+// After an end boss is beaten: Boris strikes a victory pose, the boss comes down beside him for the
+// picture, Felix the Photographer walks in, raises his camera, a white flash and a click, and the
+// winner photo of the two pops up over a dimmed screen.
 // The scene keeps the player still meanwhile (scene.cutscene) and calls done() at the end.
-export default function takeWinnerPhoto(scene, player, done) {
+export default function takeWinnerPhoto(scene, player, boss, done) {
   const cam = scene.cameras.main;
   const view = cam.worldView;
   const wait = (ms) => new Promise((resolve) => scene.time.delayedCall(ms, resolve));
@@ -25,6 +27,16 @@ export default function takeWinnerPhoto(scene, player, done) {
     player.body.setVelocityY(-220);
     await wait(500);
 
+    // The boss lands on Boris's other side, arm round his shoulder.
+    let centerX = player.x;
+    if (boss?.active) {
+      await Promise.race([until(() => player.body.blocked.down), wait(1000)]);
+      const bossX = player.x - side * PAIR_GAP;
+      await boss.standForPhoto(bossX, player.body.bottom, side < 0);
+      centerX = (player.x + bossX) / 2;
+      await wait(250);
+    }
+
     const targetX = player.x + side * DISTANCE;
     const felix = scene.add.image(side > 0 ? view.right + 16 : view.left - 16, player.body.bottom, 'felix-walk')
       .setOrigin(0.5, 1).setScale(FELIX_SCALE).setFlipX(side < 0).setDepth(2);
@@ -38,7 +50,7 @@ export default function takeWinnerPhoto(scene, player, done) {
     // Camera up... snap.
     felix.setTexture('felix-shoot');
     await wait(350);
-    const snap = await snapshot(scene, player);
+    const snap = await snapshot(scene, centerX, player.body.bottom);
     const mirror = side < 0 ? -1 : 1; // flipped to face right when he came from the left
     const burst = scene.add.image(felix.x + mirror * FELIX_FLASH.x * FELIX_SCALE, felix.y + FELIX_FLASH.y * FELIX_SCALE, 'felix-flash-0')
       .setScale(FELIX_SCALE).setDepth(3);
@@ -71,13 +83,14 @@ function tween(scene, config) {
   return new Promise((resolve) => scene.tweens.add({ ...config, onComplete: resolve }));
 }
 
-// Copies the screen around Boris (the photo window's size at ZOOM 2 is 80x56 of the world) into a texture.
-function snapshot(scene, player) {
+// Copies the screen around (centerX, floor) (the photo window's size at ZOOM 2 is 80x56 of the world)
+// into a texture.
+function snapshot(scene, centerX, floor) {
   const cam = scene.cameras.main;
   const w = PHOTO_WINDOW.w;
   const h = PHOTO_WINDOW.h;
-  const sx = (player.x - cam.worldView.x) * ZOOM;
-  const sy = (player.body.bottom - 22 - cam.worldView.y) * ZOOM;
+  const sx = (centerX - cam.worldView.x) * ZOOM;
+  const sy = (floor - 22 - cam.worldView.y) * ZOOM;
   const x = Math.round(Math.min(Math.max(sx - w / 2, 0), GAME_WIDTH * ZOOM - w));
   const y = Math.round(Math.min(Math.max(sy - h / 2, 0), GAME_HEIGHT * ZOOM - h));
   return new Promise((resolve) => {
