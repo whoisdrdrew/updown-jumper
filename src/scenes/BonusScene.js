@@ -1,0 +1,427 @@
+import Phaser from 'phaser';
+import Player from '../player/Player.js';
+import Controls from '../player/Controls.js';
+import BossBeat from '../audio/BossBeat.js';
+import { BONUS, GAME_WIDTH, PLAYER, ZOOM } from '../config.js';
+import { DUCK_SCALE } from '../art/sprites.js';
+import { preloadBonus, BONUS_SCALE, POPUP_TEXT_BOX, PORTRAIT_INSET } from '../art/bonus.js';
+import { addExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
+import { preloadNuggets } from '../art/afterparty.js';
+import { preloadVipFx, danceKey } from '../art/vipFx.js';
+import VipFx from '../objects/VipFx.js';
+import { hasNugget, markNugget } from '../progress.js';
+
+const FONT = '"Press Start 2P", monospace';
+
+// Room layout in world pixels. The lobby (door and two buttons) is one screen; behind a gate is
+// the big room with the trampoline floor, the boss portrait and a duck on every 16x16 piece of it.
+const FLOOR = 164;
+const WORLD_W = 576;
+const DOOR_X = 72; // clear of the d-pad on phones
+const MUSIC_X = 132;
+const TIMER_X = 168;
+const GATE_X = 248;
+const ROOM_LEFT = 256;
+const PORTRAIT = { cols: 9, rows: 7, cell: 16, left: 416 - 72, top: 26 };
+const CELL_COLOR = 0x221533;
+const CANNON_XS = [ROOM_LEFT + 22, WORLD_W - 22]; // the CO2 cannons, far left and right of the big room
+const DANCE_STEP_MS = 250; // Boris's dance: frames 0, 1, 2, 1 while the music plays and he stands still
+const DANCE_LOOP = [0, 1, 2, 1];
+
+// The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
+// Jump on the music button for the boss's beat, on the timer button to start the 15 seconds
+// (after a yes/no popup); the gate opens and every duck you grab uncovers a piece of the portrait.
+// When time is up the ducks vanish and the whole portrait shows. Catch every duck in time and you
+// win the level's golden chicken nugget. Leave through the door (up).
+// Started by GameScene with { level, big, masked, played }; wakes GameScene with { ducks, played }.
+export default class BonusScene extends Phaser.Scene {
+  constructor() {
+    super('bonus');
+  }
+
+  preload() {
+    preloadBonus(this);
+    preloadNuggets(this);
+    preloadVipFx(this);
+  }
+
+  create(data) {
+    const cam = this.cameras.main;
+    cam.setZoom(ZOOM);
+    this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
+    this.physics.world.setBounds(0, 0, WORLD_W, 180, true, true, false, true); // no ceiling
+    this.state = data.played ? 'done' : 'ready';
+    this.collected = 0;
+    this.level = data.level ?? 1;
+
+    this.add.tileSprite(0, 0, WORLD_W / BONUS_SCALE, 180 / BONUS_SCALE, 'bonus-lounge').setOrigin(0).setScale(BONUS_SCALE);
+    // The party: moving lights (behind everything) and the CO2 cannons in the big room.
+    this.fx = new VipFx(this, WORLD_W);
+    this.fx.addLights();
+    this.addFloor();
+    this.addPortrait();
+    this.fx.addCannons(FLOOR, CANNON_XS);
+    this.door = this.add.image(DOOR_X, FLOOR, 'vip-door-open').setOrigin(0.5, 1).setScale(BONUS_SCALE);
+    this.time.delayedCall(400, () => this.state !== 'leaving' && this.door.setTexture('vip-door'));
+    this.musicButton = this.addButton(MUSIC_X, 'button-music');
+    this.timerButton = this.addButton(TIMER_X, data.played ? 'button-timer-pressed' : 'button-timer');
+    this.addGate(data.played);
+    this.addHint();
+
+    this.controls = new Controls(this);
+    this.player = new Player(this, DOOR_X + 24, FLOOR - 12, this.controls).setDepth(5);
+    this.player.masked = !!data.masked;
+    this.player.setBig(!!data.big);
+    // Shown in Boris's place while he dances (the dance frames are bigger than his normal ones).
+    this.dancer = this.add.image(0, 0, danceKey(this.player.look, 0)).setOrigin(0.5, 1).setScale(this.player.scaleX)
+      .setDepth(5).setVisible(false);
+    this.physics.add.collider(this.player, [this.floor, this.gate]);
+    // The buttons are solid, like Mario's switch blocks: land on one to press it.
+    this.physics.add.collider(this.player, [this.musicButton, this.timerButton], (_p, button) => this.landOn(button));
+    this.physics.add.overlap(this.player, this.ducks, (_p, duck) => this.collect(duck));
+
+    this.beat = new BossBeat(this.sound.context);
+    this.events.once('shutdown', () => this.beat.stop());
+    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+
+    cam.setBounds(0, 0, WORLD_W, 180);
+    cam.startFollow(this.player, true, 0.2, 0.2);
+    cam.setRoundPixels(true);
+    cam.fadeIn(250);
+    this.addHud();
+  }
+
+  update(time, delta) {
+    const { player, controls } = this;
+    this.fx.update(time);
+    if (this.state === 'leaving') return;
+    this.dance(time);
+    if (this.state === 'popup') return this.updatePopup(time);
+
+    // Up at the door leaves (checked before the player moves, so that press doesn't also jump).
+    const atDoor = player.body.blocked.down && Math.abs(player.x - DOOR_X) <= BONUS.doorReach;
+    this.hint.setVisible(atDoor);
+    if (atDoor) this.hint.setPosition(DOOR_X, FLOOR - 48 + this.hintBob);
+    if (atDoor && controls.upJustPressed()) return this.leave();
+    player.update(time, delta);
+    this.bounce();
+    // A real jump or stepping off makes the next landing press the button again (the hop doesn't).
+    const off = this.standingOn && Math.abs(player.x - this.standingOn.x) > this.standingOn.displayWidth / 2 + 4;
+    if (off || player.body.velocity.y < -BONUS.buttonBounce - 40) this.standingOn = null;
+
+  }
+
+  // With the music on and Boris standing still on the floor, he dances; moving brings him back.
+  dance(time) {
+    const { player } = this;
+    const body = player.body;
+    const still = body.blocked.down && Math.abs(body.velocity.x) < 5 && Math.abs(body.velocity.y) < 5
+      && !this.controls.left() && !this.controls.right() && player.x < ROOM_LEFT;
+    const on = this.beat.playing && still && this.state !== 'leaving';
+    player.setVisible(!on);
+    this.dancer.setVisible(on);
+    if (!on) return;
+    const n = DANCE_LOOP[Math.floor(time / DANCE_STEP_MS) % DANCE_LOOP.length];
+    this.dancer.setTexture(danceKey(player.look, n)).setPosition(player.x, body.bottom);
+  }
+
+  // A button on the floor, solid so you can stand on it.
+  addButton(x, texture) {
+    return this.physics.add.staticImage(x, FLOOR, texture).setOrigin(0.5, 1).setScale(BONUS_SCALE).refreshBody();
+  }
+
+  // Landing on top of a button presses it (from the side it is just a block): music on or off, or the timer question.
+  landOn(button) {
+    const body = this.player.body;
+    if (!body.touching.down || !button.body.touching.up || this.standingOn === button) return;
+    this.standingOn = button;
+    body.setVelocityY(-BONUS.buttonBounce); // a little hop off it, like a Mario P-switch
+    if (button === this.musicButton) {
+      const on = this.beat.toggle();
+      button.setTexture(on ? 'button-music-pressed' : 'button-music');
+      this.fx.setMusic(on);
+    } else if (this.state === 'ready') {
+      this.openPopup();
+    }
+  }
+
+  // The floor: carpet in the lobby, trampoline tiles in the big room.
+  addFloor() {
+    const g = this.add.graphics();
+    g.fillStyle(0x2c1c40).fillRect(0, FLOOR, ROOM_LEFT, 180 - FLOOR);
+    g.fillStyle(0xc89a3c).fillRect(0, FLOOR, ROOM_LEFT, 1);
+    this.trampolines = [];
+    for (let x = ROOM_LEFT; x < WORLD_W; x += 16) {
+      this.trampolines.push(this.add.image(x, FLOOR, 'trampoline-0').setOrigin(0).setScale(BONUS_SCALE));
+    }
+    this.floor = this.add.zone(0, FLOOR, WORLD_W, 180 - FLOOR).setOrigin(0);
+    this.physics.add.existing(this.floor, true);
+  }
+
+  // Like a Mario trampoline: landing on it throws you up, every time exactly as high as the top row
+  // of ducks (the jump button makes no difference here), so every duck can be reached.
+  bounce() {
+    const { player } = this;
+    const body = player.body;
+    if (player.x < ROOM_LEFT) {
+      body.setMaxVelocityY(PLAYER.maxFallSpeed);
+      return;
+    }
+    body.setMaxVelocityY(1000); // the fall speed limit would also cap the launch
+    if (!body.blocked.down) {
+      body.setGravityY(0); // the same arc up and down, whatever the jump button does
+      return;
+    }
+    const rise = body.top - (PORTRAIT.top + BONUS.topReach);
+    body.setGravityY(0);
+    body.setVelocityY(-Math.sqrt(2 * this.physics.world.gravity.y * rise));
+    player.lastGroundedAt = -Infinity; // no ordinary jump straight after
+    const tile = this.trampolines[Math.floor((player.x - ROOM_LEFT) / 16)];
+    if (!tile) return;
+    tile.setTexture('trampoline-1');
+    this.time.delayedCall(120, () => tile.setTexture('trampoline-0'));
+  }
+
+  // The boss portrait, a dark cell over each 16x16 piece of it, and a duck on each cell.
+  addPortrait() {
+    const { cols, rows, cell, left, top } = PORTRAIT;
+    const inset = PORTRAIT_INSET * BONUS_SCALE;
+    this.add.image(left, top, 'bonus-portrait').setOrigin(0).setScale(BONUS_SCALE);
+    this.add.image(left - inset, top - inset, 'bonus-portrait-frame').setOrigin(0).setScale(BONUS_SCALE);
+    this.cells = [];
+    this.ducks = this.physics.add.staticGroup();
+    if (this.state === 'done') return; // played already: the whole portrait shows
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = left + c * cell + cell / 2;
+        const y = top + r * cell + cell / 2;
+        const cover = this.add.rectangle(x, y, cell, cell, CELL_COLOR);
+        this.cells.push(cover);
+        const duck = this.ducks.create(x, y, 'rubber-duck').setScale(DUCK_SCALE).refreshBody();
+        duck.cover = cover;
+        this.tweens.add({ targets: duck, y: y - 1, duration: 500, delay: (r + c) * 60, yoyo: true, repeat: -1 });
+      }
+    }
+  }
+
+  // Gold bars between the lobby and the big room; they slide up when the timer starts.
+  addGate(open) {
+    const g = this.add.graphics();
+    g.fillStyle(0x3a2450).fillRect(GATE_X, 0, ROOM_LEFT - GATE_X, FLOOR);
+    g.fillStyle(0xc89a3c);
+    for (let x = GATE_X + 1; x < ROOM_LEFT; x += 3) g.fillRect(x, 0, 1, FLOOR);
+    for (let y = 8; y < FLOOR; y += 24) g.fillRect(GATE_X, y, ROOM_LEFT - GATE_X, 2);
+    this.gateArt = g;
+    this.gate = this.add.zone(GATE_X, 0, ROOM_LEFT - GATE_X, FLOOR).setOrigin(0);
+    this.physics.add.existing(this.gate, true);
+    if (open) this.openGate(true);
+  }
+
+  openGate(instant) {
+    this.gate.body.enable = false;
+    if (instant) this.gateArt.y = -FLOOR;
+    else this.tweens.add({ targets: this.gateArt, y: -FLOOR, duration: 600, ease: 'Quad.easeIn' });
+  }
+
+  // A small bobbing arrow over the door when you can use it: press up.
+  addHint() {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0xffffff).fillTriangle(0, 5, 8, 5, 4, 0);
+    g.generateTexture('bonus-hint', 8, 5);
+    g.destroy();
+    this.hint = this.add.image(0, 0, 'bonus-hint').setVisible(false).setDepth(6);
+    this.hintBob = 0;
+    this.tweens.add({ targets: this, hintBob: 3, duration: 300, yoyo: true, repeat: -1 });
+  }
+
+  addHud() {
+    const { x: ux, y: uy } = this.ui;
+    const text = (x, y, value, originX = 0) =>
+      this.add
+        .text(ux + x, uy + y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff' })
+        .setShadow(1, 1, '#1a1020', 0, false, true)
+        .setOrigin(originX, 0)
+        .setScrollFactor(0)
+        .setDepth(10);
+    // EXIT leaves the level too (the level is asleep behind this room).
+    addExitButton(this, () => {
+      this.scene.stop('game');
+      this.scene.start('home');
+    });
+    const left = 10 + EXIT_BUTTON_WIDTH + 4;
+    this.add.image(ux + left, uy + 9, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
+    this.countText = text(left + 7, 5, 'x00');
+    text(GAME_WIDTH / 2, 5, 'VIP DUCK ROOM', 0.5).setColor('#ffe680');
+    text(GAME_WIDTH - 6, 5, 'TIME', 1);
+    this.timeLeft = BONUS.timeLimit;
+    this.timeText = text(GAME_WIDTH - 6, 15, this.state === 'done' ? '0' : String(this.timeLeft), 1);
+    // This level's golden nugget, in line next to the duck count: an empty slot until every duck is caught in time.
+    this.nuggetIcon = this.add.image(ux + left + 41, uy + 9, hasNugget(this.level) ? 'nugget-icon' : 'nugget-slot')
+      .setScale(1).setScrollFactor(0).setDepth(10);
+  }
+
+  // "Start the timer?" with YES and NO. Left/right picks; down, jump, Space or Enter confirms; or tap.
+  openPopup() {
+    this.state = 'popup';
+    this.player.body.setVelocityX(0);
+    this.flushPresses();
+    const { x: ux, y: uy } = this.ui;
+    const s = BONUS_SCALE;
+    const px = ux + GAME_WIDTH / 2 - (232 * s) / 2;
+    const py = uy + 30;
+    const tx = px + POPUP_TEXT_BOX.x * s;
+    const ty = py + POPUP_TEXT_BOX.y * s;
+    const text = (x, y, value) =>
+      this.add.text(x, y, value, { fontFamily: FONT, fontSize: '8px', color: '#ffffff' }).setResolution(ZOOM);
+    const panel = this.add.image(px, py, 'bonus-popup').setOrigin(0).setScale(s);
+    const question = text(tx, ty, 'START THE\nTIMER?').setLineSpacing(2);
+    const yes = text(tx + 8, ty + 20, 'YES');
+    const no = text(tx + 48, ty + 20, 'NO');
+    this.popup = { parts: [panel, question, yes, no, text(tx, ty + 20, '>')], yes: true };
+    this.popup.parts.forEach((p) => p.setScrollFactor(0).setDepth(20));
+    this.popup.cursor = this.popup.parts[4];
+    for (const [option, choice] of [[yes, true], [no, false]]) {
+      option.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.closePopup(choice));
+    }
+  }
+
+  updatePopup(time) {
+    const { controls, popup, player } = this;
+    player.body.setVelocityX(0);
+    player.animate(time, player.body.blocked.down);
+    if (controls.left()) popup.yes = true;
+    if (controls.right()) popup.yes = false;
+    popup.cursor.x = popup.parts[popup.yes ? 2 : 3].x - 8;
+    const confirm = controls.downJustPressed() | controls.jumpJustPressed() | controls.shootJustPressed()
+      | Phaser.Input.Keyboard.JustDown(this.enterKey);
+    if (confirm) this.closePopup(popup.yes);
+  }
+
+  closePopup(start) {
+    if (this.state !== 'popup') return;
+    this.popup.parts.forEach((p) => p.destroy());
+    this.popup = null;
+    this.flushPresses();
+    this.state = 'ready';
+    if (start) this.startTimer();
+  }
+
+  startTimer() {
+    this.state = 'running';
+    this.timerButton.setTexture('button-timer-pressed');
+    this.openGate(false);
+    this.banner('GO!', 900);
+    this.clock = this.time.addEvent({
+      delay: 1000,
+      repeat: BONUS.timeLimit - 1,
+      callback: () => {
+        this.timeLeft -= 1;
+        this.timeText.setText(String(this.timeLeft));
+        if (this.timeLeft === 0) this.timeUp();
+      },
+    });
+  }
+
+  collect(duck) {
+    if (this.state !== 'running' || !duck.body.enable) return;
+    duck.body.enable = false;
+    this.tweens.killTweensOf(duck);
+    this.tweens.add({ targets: duck, y: duck.y - 12, alpha: 0, duration: 200, onComplete: () => duck.destroy() });
+    this.tweens.add({ targets: duck.cover, alpha: 0, duration: 120 });
+    this.collected += 1;
+    this.countText.setText(`x${String(this.collected).padStart(2, '0')}`);
+    if (this.collected === PORTRAIT.cols * PORTRAIT.rows) this.winNugget();
+  }
+
+  // Every duck caught before the time ran out: the level's golden chicken nugget pops up, shines,
+  // and flies into its slot in the corner.
+  winNugget() {
+    this.state = 'done';
+    this.clock?.remove();
+    markNugget(this.level);
+    const { x: ux, y: uy } = this.ui;
+    const nugget = this.add.image(ux + GAME_WIDTH / 2, uy + 122, 'nugget').setScrollFactor(0).setDepth(12).setScale(0);
+    // The glint sweeps over it, then a short rest.
+    const frames = ['nugget-shine-0', 'nugget-shine-1', 'nugget-shine-2', 'nugget', 'nugget', 'nugget'];
+    let frame = 0;
+    const shine = this.time.addEvent({
+      delay: 120,
+      loop: true,
+      callback: () => nugget.setTexture(frames[(frame = (frame + 1) % frames.length)]),
+    });
+    this.tweens.add({ targets: nugget, scale: 1, y: uy + 112, duration: 450, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: nugget, y: uy + 108, delay: 450, duration: 400, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
+    this.banner('ALL DUCKS!\n\nGOLDEN NUGGET', 2600);
+    this.time.delayedCall(2600, () => {
+      shine.remove();
+      nugget.setTexture('nugget');
+      this.tweens.add({
+        targets: nugget,
+        x: this.nuggetIcon.x,
+        y: this.nuggetIcon.y,
+        scale: 0.55,
+        duration: 450,
+        ease: 'Quad.easeIn',
+        onComplete: () => {
+          nugget.destroy();
+          this.nuggetIcon.setTexture('nugget-icon');
+          this.tweens.add({ targets: this.nuggetIcon, scale: 1.5, duration: 120, yoyo: true });
+        },
+      });
+    });
+  }
+
+  // The ducks that are left vanish and the rest of the portrait fades in, piece by piece.
+  timeUp() {
+    this.state = 'done';
+    this.clock?.remove();
+    this.ducks.children.each((duck) => {
+      if (!duck.body.enable) return;
+      duck.body.enable = false;
+      this.tweens.killTweensOf(duck);
+      this.tweens.add({ targets: duck, scale: 0, alpha: 0, duration: 250, onComplete: () => duck.destroy() });
+    });
+    Phaser.Utils.Array.Shuffle(this.cells.filter((c) => c.alpha > 0)).forEach((cover, i) => {
+      this.tweens.add({ targets: cover, alpha: 0, delay: 300 + i * 25, duration: 200 });
+    });
+    this.banner(`TIME UP!\n\n${this.collected} DUCKS`, 2500);
+  }
+
+  // Out through the VIP door, back to the step in the level.
+  leave() {
+    if (this.state === 'running') this.timeUp();
+    const played = this.state === 'done';
+    this.state = 'leaving';
+    this.hint.setVisible(false);
+    this.dancer.setVisible(false);
+    this.player.setVisible(true);
+    this.player.body.setVelocity(0, 0);
+    this.door.setTexture('vip-door-open');
+    this.tweens.add({ targets: this.player, alpha: 0, duration: 200 });
+    this.cameras.main.fadeOut(250);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.beat.stop();
+      this.scene.wake('game', { ducks: this.collected, played });
+      this.scene.stop();
+    });
+  }
+
+  flushPresses() {
+    const c = this.controls;
+    c.downJustPressed();
+    c.upJustPressed();
+    c.jumpJustPressed();
+    c.shootJustPressed();
+  }
+
+  banner(value, ms) {
+    const t = this.add
+      .text(this.ui.x + GAME_WIDTH / 2, this.ui.y + 60, value, { fontFamily: FONT, fontSize: '16px', color: '#ffe680', align: 'center' })
+      .setShadow(2, 2, '#1a1020', 0, false, true)
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(10);
+    this.time.delayedCall(ms, () => t.destroy());
+    return t;
+  }
+}
