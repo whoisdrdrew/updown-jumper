@@ -45,12 +45,15 @@ export default class VipFx {
   }
 
   // Cannons standing on the floor at the given x positions; the first one faces right.
-  addCannons(floor, xs) {
+  // scale 1 in the scenes that aren't zoomed (the Afterparty); depth of the cannons, the blasts go
+  // just behind them in the Afterparty and in front of the ducks in the VIP room.
+  addCannons(floor, xs, { scale = S, depth = 0, blastDepth = 4 } = {}) {
     const { scene } = this;
     this.cannons = xs.map((x, i) => {
-      const cannon = scene.add.image(x, floor, i === 0 ? 'vip-co2-cannon-left' : 'vip-co2-cannon-right').setOrigin(0.5, 1).setScale(S);
-      const blast = scene.add.image(x, cannon.getTopCenter().y + NOZZLE_Y * S, 'vip-co2-blast-0')
-        .setOrigin(0.5, 1).setScale(S).setDepth(4).setVisible(false);
+      const cannon = scene.add.image(x, floor, i === 0 ? 'vip-co2-cannon-left' : 'vip-co2-cannon-right').setOrigin(0.5, 1)
+        .setScale(scale).setDepth(depth);
+      const blast = scene.add.image(x, cannon.getTopCenter().y + NOZZLE_Y * scale, 'vip-co2-blast-0')
+        .setOrigin(0.5, 1).setScale(scale).setDepth(blastDepth).setVisible(false);
       return { cannon, blast };
     });
     scene.time.delayedCall(CANNON_FIRST, () => {
@@ -61,6 +64,7 @@ export default class VipFx {
 
   fire() {
     let tick = 0;
+    if (!this.scene.sys.isActive()) return;
     this.cannons.forEach(({ blast }) => blast.setTexture('vip-co2-blast-0').setVisible(true));
     this.hiss();
     this.scene.time.addEvent({

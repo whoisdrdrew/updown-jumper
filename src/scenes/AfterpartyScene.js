@@ -8,16 +8,21 @@ import heroJump from '../art/hero/jump.png';
 import solomunPhotoPose from '../art/solomun/photo-pose.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { addExitButton, preloadExitButton } from '../objects/ExitButton.js';
+import VipFx from '../objects/VipFx.js';
+import { preloadVipFx } from '../art/vipFx.js';
 import {
-  preloadAfterparty, DJS, DJ_SPOTS, BOOTH_SPRITE, BOOTH_GLOW, BOOTH_DJ, BOOTH_STEPS,
+  preloadAfterparty, DJS, DJ_SPOTS, ROOM_FLOOR, BOOTH_SPRITE, BOOTH_GLOW, BOOTH_DJ, BOOTH_STEPS,
 } from '../art/afterparty.js';
 
 const FONT = '"Press Start 2P", monospace';
 const GOLD = '#ffd34a';
 const BORIS_AT = { x: 320, y: 348 }; // on the dance floor, in front of the stage
-// Boris can DJ too: picked like the others, he goes up and plays the game's own song.
+// Boris can DJ too: picked like the others, he goes up and plays his 5 tracks (the menu songs) one
+// after another.
 // He's shorter than the others, so at the booth he stands on a crate (lift: picture pixels higher).
-const BORIS_DJ = { name: 'BORIS', texture: 'home-boris', song: SONGS[0].url, lift: 12 };
+const BORIS_DJ = { name: 'BORIS', texture: 'home-boris', songs: SONGS, lift: 12 };
+// The CO2 cannons either side of the stage, like in the VIP room.
+const CANNON_XS = [188, 452];
 const WALK_SPEED = 90; // picture pixels a second, for a DJ walking to or from the booth
 
 // The Afterparty, unlocked by the ticket once all 10 golden nuggets are won. Not a level: a room
@@ -34,6 +39,7 @@ export default class AfterpartyScene extends Phaser.Scene {
 
   preload() {
     preloadAfterparty(this);
+    preloadVipFx(this);
     preloadExitButton(this);
     this.load.image('home-boris', heroIdle);
     this.load.image('home-boris-jump', heroJump);
@@ -75,6 +81,10 @@ export default class AfterpartyScene extends Phaser.Scene {
     this.add.zone(BORIS_AT.x, BORIS_AT.y - 30, 40, 64).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => (this.selected === borisSpot ? this.pick() : this.select(borisSpot)));
     this.spots.push({ at: BORIS_AT, dj: BORIS_DJ, sprite: this.boris });
+
+    // The CO2 cannons from the VIP room, either side of the stage: they go off every minute.
+    this.fx = new VipFx(this, 0);
+    this.fx.addCannons(ROOM_FLOOR, CANNON_XS, { scale: 1, depth: ROOM_FLOOR, blastDepth: ROOM_FLOOR - 2 });
 
     this.addTexts();
     this.selectRing = this.add.ellipse(0, 0, 34, 10).setStrokeStyle(2, 0xffd34a).setDepth(400);
@@ -134,7 +144,9 @@ export default class AfterpartyScene extends Phaser.Scene {
     const dj = this.spots[this.selected].dj;
     const tap = touch.enabled ? 'TAP' : 'ENTER';
     const playing = this.playing === this.selected;
-    this.nameText.setText(dj ? `${dj.name}${playing ? ' IS PLAYING' : ''}` : `DJ ${this.selected + 1}`);
+    let name = dj ? dj.name : `DJ ${this.selected + 1}`;
+    if (playing) name += dj.songs && this.track ? ` PLAYS ${this.track}` : ' IS PLAYING';
+    this.nameText.setText(name);
     if (!dj) this.hintText.setText('COMING SOON');
     else if (playing) this.hintText.setText(`${tap} TO STOP`);
     else this.hintText.setText(`${tap}: SEND TO THE BOOTH`);
@@ -218,8 +230,11 @@ export default class AfterpartyScene extends Phaser.Scene {
   playMusic(i) {
     const { dj, sprite } = this.spots[i];
     let beatMs = 60000 / SONG_BPM;
-    if (dj.song) {
-      this.menuMusic.play(dj.song);
+    if (dj.songs) {
+      this.menuMusic.playList(dj.songs.map((song) => song.url), (n) => {
+        this.track = dj.songs[n].name;
+        this.showHint();
+      });
     } else {
       const beat = (this.beats[dj.beat] ??= new BossBeat(this.sound.context));
       beat.start();
@@ -238,6 +253,7 @@ export default class AfterpartyScene extends Phaser.Scene {
   stopMusic() {
     Object.values(this.beats).forEach((b) => b.stop());
     this.menuMusic.stop();
+    this.track = null;
     this.glowTimer?.remove();
     this.glow.setVisible(false);
     this.dance?.forEach((t) => t.stop());

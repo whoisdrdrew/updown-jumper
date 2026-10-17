@@ -1,5 +1,5 @@
 // Plays one menu song at a time, streamed with an <audio> element (no decoding the whole file first),
-// looping, with a short fade in and out.
+// looping, with a short fade in and out. Or a playlist: the songs one after another, round and round.
 const VOLUME = 0.7;
 const FADE_MS = 400;
 
@@ -8,10 +8,18 @@ export default class MenuMusic {
     this.audio = null;
   }
 
-  play(url) {
+  // onTrack(i) is told which song of the playlist starts.
+  playList(urls, onTrack, i = 0) {
+    this.play(urls[i], false);
+    onTrack?.(i);
+    const audio = this.audio;
+    audio.addEventListener('ended', () => this.audio === audio && this.playList(urls, onTrack, (i + 1) % urls.length));
+  }
+
+  play(url, loop = true) {
     this.stop();
     const audio = new Audio(url);
-    audio.loop = true;
+    audio.loop = loop;
     audio.volume = 0;
     audio.play().catch(() => {});
     this.fade(audio, VOLUME);
