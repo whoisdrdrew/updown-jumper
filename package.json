@@ -1,0 +1,26 @@
+{
+  "name": "updown-jumper",
+  "version": "1.0.0",
+  "description": "8-bit platformer starring the Up-Down-Jumper",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/whoisdrdrew/updown-jumper.git"
+  },
+  "bugs": {
+    "url": "https://github.com/whoisdrdrew/updown-jumper/issues"
+  },
+  "homepage": "https://github.com/whoisdrdrew/updown-jumper#readme",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.4"
+  },
+  "private": true,
+  "type": "module"
+}
