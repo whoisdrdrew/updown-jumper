@@ -6,7 +6,7 @@ import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { hasSeenIntro, levelsDone, levelPhoto, hasNugget, nuggetCount } from '../progress.js';
 import { preloadNuggets, NUGGET_COUNT } from '../art/afterparty.js';
 import MenuMusic from '../audio/MenuMusic.js';
-import { SONGS, SONG_BPM } from '../audio/songs.js';
+import { SONGS } from '../audio/songs.js';
 import {
   preloadHome, cardKey, LEVEL_COUNT, CARD_AT, CARD_WINDOW, SELECT_OFFSET, HINT_AREA, TITLE_PANEL,
   PLAY_POS, PLAY_SELECT_OFFSET, SONG_MENU, SONG_TITLE_BOX, songRow, SONG_ROW_SELECT_OFFSET,
@@ -278,7 +278,6 @@ export default class HomeScene extends Phaser.Scene {
     }
     // The first time, level 1 starts with the story.
     this.starting = true;
-    this.nod?.stop();
     this.borisJump(() => {
       this.starting = false;
       if (level === 1 && !hasSeenIntro()) this.start('intro', { room: 'bedroom' });
@@ -366,15 +365,11 @@ export default class HomeScene extends Phaser.Scene {
     this.showPlaying();
   }
 
-  // The play button shows pause bars and Boris nods along while music plays; the eq dances on its row.
+  // The play button shows pause bars while music plays; the eq bars move on its row. (Boris keeps
+  // still: the characters only dance at the Afterparty.)
   showPlaying() {
     const on = Boolean(this.music);
     this.playButton.setTexture(on ? 'home-play-on' : 'home-play');
     this.songs?.eqs.forEach((eq, i) => eq.setVisible(this.music?.index === i));
-    this.nod?.stop();
-    this.boris.y = BORIS_AT.floor;
-    this.nod = on
-      ? this.tweens.add({ targets: this.boris, y: BORIS_AT.floor + 1, duration: 30000 / SONG_BPM, yoyo: true, repeat: -1 })
-      : null;
   }
 }

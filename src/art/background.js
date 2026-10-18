@@ -27,7 +27,6 @@ const TULUM_LAMPS = [
   [398, 37],
   [560, 87],
 ];
-const DANCE_FRAME_MS = 240; // two frames a beat at 125 BPM
 
 export function preloadBackground(scene) {
   scene.load.image('bg-sky', skyImage);
@@ -106,7 +105,8 @@ function tulumLayers(scene, cam, ox, oy, layer) {
   });
   const lamps = layer('tulum-lamps', ox, oy, GAME_WIDTH, GAME_HEIGHT, 0);
 
-  // The crowd dances in a 4-frame loop; only the current frame is shown.
+  // The crowd: 4 dance frames, but it holds still on the first one (the characters only dance at
+  // the Afterparty).
   const crowd = TULUM_CROWD.map((_, i) => layer(`tulum-crowd-${i}`, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0).setVisible(i === 0));
 
   return function update(time) {
@@ -115,9 +115,7 @@ function tulumLayers(scene, cam, ox, oy, layer) {
     for (const glow of glows) {
       glow.x = ox + Phaser.Math.Wrap(glow.lampX - cam.scrollX * 0.25, -40, GAME_WIDTH - 40) + glow.copy * GAME_WIDTH;
     }
-    const frame = Math.floor(time / DANCE_FRAME_MS) % crowd.length;
-    crowd.forEach((c, i) => {
-      c.setVisible(i === frame);
+    crowd.forEach((c) => {
       c.tilePositionX = (cam.scrollX * 0.4) / ART_SCALE;
     });
   };

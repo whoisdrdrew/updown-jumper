@@ -9,7 +9,7 @@ import solomunPhotoPose from '../art/solomun/photo-pose.png';
 import { touch, showTouchControls } from '../touch/TouchControls.js';
 import { addExitButton, preloadExitButton } from '../objects/ExitButton.js';
 import VipFx from '../objects/VipFx.js';
-import { preloadVipFx } from '../art/vipFx.js';
+import { preloadVipFx, danceKey } from '../art/vipFx.js';
 import {
   preloadAfterparty, DJS, DJ_SPOTS, ROOM_FLOOR, BOOTH_SPRITE, BOOTH_GLOW, BOOTH_DJ, BOOTH_STEPS,
 } from '../art/afterparty.js';
@@ -23,6 +23,7 @@ const BORIS_AT = { x: 320, y: 348 }; // on the dance floor, in front of the stag
 const BORIS_DJ = { name: 'BORIS', texture: 'home-boris', songs: SONGS, lift: 12 };
 // The CO2 cannons either side of the stage, like in the VIP room.
 const CANNON_XS = [188, 452];
+const DANCE_LOOP = [0, 1, 2, 1]; // Boris's dance frames while a DJ plays
 const WALK_SPEED = 90; // picture pixels a second, for a DJ walking to or from the booth
 
 // The Afterparty, unlocked by the ticket once all 10 golden nuggets are won. Not a level: a room
@@ -243,11 +244,15 @@ export default class AfterpartyScene extends Phaser.Scene {
     this.glow.setVisible(true);
     let n = 0;
     this.glowTimer = this.time.addEvent({ delay: beatMs / 2, loop: true, callback: () => this.glow.setTexture(`afterparty-glow-${(n = 1 - n)}`) });
-    this.dance = [this.tweens.add({ targets: sprite, y: this.boothY(i) + 1, duration: beatMs / 2, yoyo: true, repeat: -1 })];
-    if (sprite !== this.boris) {
-      // Boris dances on the floor.
-      this.dance.push(this.tweens.add({ targets: this.boris, y: BORIS_AT.y - 3, duration: beatMs / 2, yoyo: true, repeat: -1, ease: 'Quad.easeOut' }));
-    }
+    // Boris dances (fist pump, arms up, the other fist) at the booth or on the floor; another DJ bobs.
+    this.dance = sprite === this.boris ? [] : [this.tweens.add({ targets: sprite, y: this.boothY(i) + 1, duration: beatMs / 2, yoyo: true, repeat: -1 })];
+    let step = 0;
+    this.borisDance = this.time.addEvent({
+      delay: beatMs / 2,
+      loop: true,
+      callback: () => this.boris.setTexture(danceKey('hero', DANCE_LOOP[(step = (step + 1) % DANCE_LOOP.length)])),
+    });
+    this.boris.setTexture(danceKey('hero', DANCE_LOOP[0]));
   }
 
   stopMusic() {
@@ -258,6 +263,9 @@ export default class AfterpartyScene extends Phaser.Scene {
     this.glow.setVisible(false);
     this.dance?.forEach((t) => t.stop());
     this.dance = null;
+    this.borisDance?.remove();
+    this.borisDance = null;
+    this.boris.setTexture('home-boris');
     if (this.boris.x === BORIS_AT.x) this.boris.y = BORIS_AT.y;
     if (this.playing !== null) this.spots[this.playing].sprite.y = this.boothY(this.playing);
   }

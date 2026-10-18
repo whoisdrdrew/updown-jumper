@@ -7,7 +7,7 @@ import { DUCK_SCALE } from '../art/sprites.js';
 import { preloadBonus, BONUS_SCALE, POPUP_TEXT_BOX, PORTRAIT_INSET } from '../art/bonus.js';
 import { addExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
 import { preloadNuggets } from '../art/afterparty.js';
-import { preloadVipFx, danceKey } from '../art/vipFx.js';
+import { preloadVipFx } from '../art/vipFx.js';
 import VipFx from '../objects/VipFx.js';
 import { hasNugget, markNugget } from '../progress.js';
 
@@ -25,8 +25,6 @@ const ROOM_LEFT = 256;
 const PORTRAIT = { cols: 9, rows: 7, cell: 16, left: 416 - 72, top: 26 };
 const CELL_COLOR = 0x221533;
 const CANNON_XS = [ROOM_LEFT + 22, WORLD_W - 22]; // the CO2 cannons, far left and right of the big room
-const DANCE_STEP_MS = 250; // Boris's dance: frames 0, 1, 2, 1 while the music plays and he stands still
-const DANCE_LOOP = [0, 1, 2, 1];
 
 // The duck bonus room behind the VIP door, like the coin rooms in Super Mario Bros. 3.
 // Jump on the music button for the boss's beat, on the timer button to start the 15 seconds
@@ -72,9 +70,6 @@ export default class BonusScene extends Phaser.Scene {
     this.player = new Player(this, DOOR_X + 24, FLOOR - 12, this.controls).setDepth(5);
     this.player.masked = !!data.masked;
     this.player.setBig(!!data.big);
-    // Shown in Boris's place while he dances (the dance frames are bigger than his normal ones).
-    this.dancer = this.add.image(0, 0, danceKey(this.player.look, 0)).setOrigin(0.5, 1).setScale(this.player.scaleX)
-      .setDepth(5).setVisible(false);
     this.physics.add.collider(this.player, [this.floor, this.gate]);
     // The buttons are solid, like Mario's switch blocks: land on one to press it.
     this.physics.add.collider(this.player, [this.musicButton, this.timerButton], (_p, button) => this.landOn(button));
@@ -95,7 +90,6 @@ export default class BonusScene extends Phaser.Scene {
     const { player, controls } = this;
     this.fx.update(time);
     if (this.state === 'leaving') return;
-    this.dance(time);
     if (this.state === 'popup') return this.updatePopup(time);
 
     // Up at the door leaves (checked before the player moves, so that press doesn't also jump).
@@ -109,20 +103,6 @@ export default class BonusScene extends Phaser.Scene {
     const off = this.standingOn && Math.abs(player.x - this.standingOn.x) > this.standingOn.displayWidth / 2 + 4;
     if (off || player.body.velocity.y < -BONUS.buttonBounce - 40) this.standingOn = null;
 
-  }
-
-  // With the music on and Boris standing still on the floor, he dances; moving brings him back.
-  dance(time) {
-    const { player } = this;
-    const body = player.body;
-    const still = body.blocked.down && Math.abs(body.velocity.x) < 5 && Math.abs(body.velocity.y) < 5
-      && !this.controls.left() && !this.controls.right() && player.x < ROOM_LEFT;
-    const on = this.beat.playing && still && this.state !== 'leaving';
-    player.setVisible(!on);
-    this.dancer.setVisible(on);
-    if (!on) return;
-    const n = DANCE_LOOP[Math.floor(time / DANCE_STEP_MS) % DANCE_LOOP.length];
-    this.dancer.setTexture(danceKey(player.look, n)).setPosition(player.x, body.bottom);
   }
 
   // A button on the floor, solid so you can stand on it.
@@ -393,8 +373,6 @@ export default class BonusScene extends Phaser.Scene {
     const played = this.state === 'done';
     this.state = 'leaving';
     this.hint.setVisible(false);
-    this.dancer.setVisible(false);
-    this.player.setVisible(true);
     this.player.body.setVelocity(0, 0);
     this.door.setTexture('vip-door-open');
     this.tweens.add({ targets: this.player, alpha: 0, duration: 200 });
