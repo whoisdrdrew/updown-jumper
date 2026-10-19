@@ -17,6 +17,12 @@ Current state: **Milestone 1, core movement**, with a first style pass after the
 
   and open the address it prints (usually http://localhost:5173).
 
+- As an app on your phone: open the online address on the phone, then
+  - iPhone (Safari): Share button, **Add to Home Screen**, Add.
+  - Android (Chrome): menu (three dots), **Add to Home screen** or **Install app**.
+
+  It gets its own icon and opens full screen, sideways, with no browser bars. Once opened, it also starts without a connection (songs you have played are kept too). New builds show up the next time you open it online. Icons: `public/icons/`, drawn by `tools/app_icon.py`; app settings in `public/manifest.webmanifest`, offline copy in `public/sw.js`.
+
 Controls: left/right arrows to move, up arrow to jump (hold for a higher jump), Space to shoot a rubber duck (hold it to run, like the Y button in Super Mario World), up arrow at the VIP door to go through it, R to restart.
 
 On a phone or tablet the game fills the screen, and the controls are kept small and faint so they hide as little of it as possible (like Leo's Fortune). Put your left thumb down anywhere on the left 45% of the screen: a cross appears under it. Slide left or right to walk, slide further to run, slide up for the VIP door. If your thumb drifts, the cross follows it. On the right, B (shoot, hold to run) and A (jump) are small circles in the margin, but the whole bottom right of the screen is their touch area: a tap there presses whichever button is nearer, and you can slide from one to the other. Computers never show them. Phones play sideways only; held upright, the game pauses and asks you to turn the phone.

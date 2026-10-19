@@ -42,3 +42,9 @@ Promise.race([fontLoaded, new Promise((resolve) => setTimeout(resolve, 2000))]).
   startGame();
   window.__game.events.once('ready', () => touch.applyOrientation?.());
 });
+
+// Keep the game on the phone so the installed app also starts offline (built game only, so the
+// dev server never serves a stale copy).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
