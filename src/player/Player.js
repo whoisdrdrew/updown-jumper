@@ -1,0 +1,282 @@
+import Phaser from 'phaser';
+import { PHYSICS, PLAYER, SECURITY, HEAD_SECURITY, RIDE_DUCK } from '../config.js';
+import { HERO_SCALE } from '../art/sprites.js';
+import DuckPuffs from './DuckPuffs.js';
+
+// Hitbox sizes on foot and riding the big duck.
+const SIZE = {
+  foot: { w: PLAYER.width, h: PLAYER.height },
+  riding: { w: 20, h: 28 },
+  bigFoot: { w: PLAYER.width + 1, h: PLAYER.bigHeight },
+  bigRiding: { w: 20, h: 28 + PLAYER.bigHeight - PLAYER.height },
+};
+
+// The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
+// Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count),
+// 'grow', 'shrink'.
+export default class Player extends Phaser.Physics.Arcade.Sprite {
+  constructor(scene, x, y, input) {
+    super(scene, x, y, 'bare-idle');
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    this.setScale(HERO_SCALE);
+
+    this.controls = input;
+    this.fitBody(SIZE.foot);
+    this.body.setMaxVelocityY(PLAYER.maxFallSpeed);
+    this.setCollideWorldBounds(true);
+    // In front of the suitcase, bouncers, eggs and air puffs (which are made later or sit at depth 1).
+    this.setDepth(2);
+
+    this.lastGroundedAt = -Infinity;
+    this.jumpPressedAt = -Infinity;
+    this.power = PLAYER.startPower;
+    this.shots = null; // set by the scene
+    this.hits = 0;
+    this.ammo = PLAYER.startAmmo;
+    this.riding = false;
+    this.big = false; // after eating a burger; a hit shrinks him back instead of costing a heart
+    this.masked = false; // every level starts without the mask; the suitcase gives it
+    this.dead = false;
+    this.safeUntil = 0;
+    this.steerLockedUntil = 0;
+    this.puffs = new DuckPuffs(scene);
+  }
+
+  get facing() {
+    return this.flipX ? -1 : 1;
+  }
+
+  // Which set of pictures to draw: 'hero' with the mask, 'bare' without; 'big-' after a burger.
+  get look() {
+    return (this.big ? 'big-' : '') + (this.masked ? 'hero' : 'bare');
+  }
+
+  get invulnerable() {
+    return this.dead || this.scene.time.now < this.safeUntil;
+  }
+
+  update(time, delta) {
+    if (this.dead) return;
+    const dt = delta / 1000;
+    const body = this.body;
+    const c = this.controls;
+    const onGround = body.blocked.down;
+    const canSteer = time >= this.steerLockedUntil;
+
+    if (onGround) this.lastGroundedAt = time;
+    if (c.jumpJustPressed()) this.jumpPressedAt = time;
+
+    // Horizontal movement: accelerate toward the target speed instead of snapping to it.
+    const dir = canSteer ? (c.right() ? 1 : 0) - (c.left() ? 1 : 0) : 0;
+    const maxSpeed = c.run() ? PLAYER.runSpeed : PLAYER.walkSpeed;
+    let vx = body.velocity.x;
+
+    if (!canSteer) {
+      // Slipping: slide along, steering returns in a moment.
+    } else if (dir !== 0) {
+      const turning = vx !== 0 && Math.sign(vx) !== dir;
+      const accel = !onGround ? PLAYER.airAccel : turning ? PLAYER.skidDecel : PLAYER.groundAccel;
+      vx = approach(vx, dir * maxSpeed, accel * dt);
+      this.setFlipX(dir < 0);
+    } else if (onGround) {
+      vx = approach(vx, 0, PLAYER.groundDecel * dt);
+    }
+    // Letting go of run while above walk speed bleeds speed off gradually.
+    if (canSteer && Math.abs(vx) > maxSpeed) vx = approach(vx, Math.sign(vx) * maxSpeed, PLAYER.groundDecel * dt);
+    body.setVelocityX(vx);
+
+    // Jump, with coyote time and an input buffer so it never feels like a press was eaten.
+    const canJump = canSteer && time - this.lastGroundedAt <= PLAYER.coyoteMs;
+    const buffered = time - this.jumpPressedAt <= PLAYER.jumpBufferMs;
+    if (canJump && buffered) {
+      const boost = this.riding ? RIDE_DUCK.jumpBoost : 1;
+      body.setVelocityY(-(PLAYER.jumpSpeed + Math.abs(vx) * PLAYER.runJumpBonus) * boost);
+      if (this.riding) this.puffs.jump(this);
+      this.lastGroundedAt = -Infinity;
+      this.jumpPressedAt = -Infinity;
+    }
+
+    // Variable jump height: heavier gravity once the button is released or the jump peaks.
+    const rising = body.velocity.y < 0;
+    const extra = rising && c.jump() ? 0 : PLAYER.releaseGravity - PHYSICS.gravity;
+    body.setGravityY(extra);
+
+    this.animate(time, onGround);
+
+    // Each shot uses up one collected rubber duck.
+    if (c.shootJustPressed() && this.power === 'ducks' && this.ammo > 0 && this.shots) {
+      if (this.shots.shoot(this.x + this.facing * 8, this.y - 2, this.facing)) this.addAmmo(-1);
+    }
+  }
+
+  addAmmo(n) {
+    this.ammo += n;
+    this.emit('ammo', this.ammo);
+  }
+
+  // Walked into a security bouncer: he shoves you back, away from him. Riding, the duck runs off;
+  // on foot, it costs a hit.
+  shovedFrom(x) {
+    if (this.invulnerable) return;
+    const dir = this.x < x ? -1 : 1;
+    this.body.setVelocity(dir * SECURITY.shoveSpeed, -SECURITY.shoveHop);
+    this.steerLockedUntil = this.scene.time.now + SECURITY.shoveLockMs;
+    this.takeHit();
+  }
+
+  // Punched by the head of security: knocked back hard, away from him, and it costs a hit.
+  punchedFrom(x) {
+    if (this.invulnerable) return;
+    const dir = this.x < x ? -1 : 1;
+    this.body.setVelocity(dir * HEAD_SECURITY.punchSpeed, -HEAD_SECURITY.punchHop);
+    this.steerLockedUntil = this.scene.time.now + HEAD_SECURITY.punchLockMs;
+    this.takeHit();
+  }
+
+  // Any hit (a bouncer, the boss).
+  takeHit() {
+    if (this.invulnerable) return;
+    if (this.riding) {
+      this.dismount();
+      this.blink();
+      return;
+    }
+    if (this.big) {
+      this.flickerSize(false);
+      this.emit('shrink');
+      this.blink();
+      return;
+    }
+    this.hits += 1;
+    this.emit('hurt', this.hits);
+    if (this.hits >= PLAYER.maxHits) this.die();
+    else this.blink();
+  }
+
+  blink() {
+    this.safeUntil = this.scene.time.now + PLAYER.blinkMs;
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.15,
+      duration: 80,
+      yoyo: true,
+      repeat: Math.floor(PLAYER.blinkMs / 160) - 1,
+      onComplete: () => this.setAlpha(1),
+    });
+  }
+
+  // Mario-style death: pop up and fall through the floor.
+  die() {
+    this.dead = true;
+    this.setAngle(0);
+    this.body.checkCollision.none = true;
+    this.setCollideWorldBounds(false);
+    this.body.setGravityY(0);
+    this.body.setVelocity(0, -260);
+    this.emit('dead');
+  }
+
+  // Jumped on the suitcase: the mask goes on and stays on until this life ends.
+  putOnMask() {
+    if (this.masked || this.dead) return;
+    this.masked = true;
+    this.setTexture(`${this.look}-${this.riding ? 'rider' : 'idle'}`);
+    // A quick white flash as it goes on (a scale pop would also resize the hitbox).
+    this.setTintFill(0xffffff);
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 4,
+      callback: () => (this.tintFill ? this.clearTint() : this.setTintFill(0xffffff)),
+    });
+  }
+
+  // Ate a burger: grow big, flickering between the two sizes like Mario does.
+  growBig() {
+    if (this.big || this.dead) return;
+    this.flickerSize(true);
+    this.emit('grow');
+  }
+
+  flickerSize(big) {
+    this.safeUntil = Math.max(this.safeUntil, this.scene.time.now + 500);
+    let step = 0;
+    this.scene.time.addEvent({
+      delay: 70,
+      repeat: 6,
+      callback: () => {
+        step += 1;
+        if (!this.dead) this.setBig(step === 7 ? big : step % 2 === 1 ? !big : big);
+      },
+    });
+    this.setBig(big);
+  }
+
+  // Big or small: swap to the same pose in the other size, with the matching hitbox.
+  setBig(big) {
+    this.big = big;
+    const pose = this.riding ? 'rider' : this.texture.key.split('-').pop();
+    this.resize(`${this.look}-${pose}`, this.riding ? this.ridingSize : this.footSize);
+  }
+
+  get footSize() {
+    return this.big ? SIZE.bigFoot : SIZE.foot;
+  }
+
+  get ridingSize() {
+    return this.big ? SIZE.bigRiding : SIZE.riding;
+  }
+
+  mount() {
+    if (this.riding || this.dead) return;
+    this.riding = true;
+    this.resize(`${this.look}-rider`, this.ridingSize);
+  }
+
+  dismount() {
+    if (!this.riding) return;
+    this.riding = false;
+    this.setAngle(0);
+    const { x } = this;
+    const bottom = this.body.bottom;
+    this.resize(`${this.look}-idle`, this.footSize);
+    this.body.setVelocityY(-200); // jump off the duck
+    this.emit('dismount', x, bottom - 8, -this.facing);
+  }
+
+  // Hitbox centred horizontally, standing on the bottom edge of the sprite.
+  // Sizes are in world pixels; the body works in picture pixels, so divide by the sprite's scale.
+  fitBody(size) {
+    const w = size.w / this.scaleX;
+    const h = size.h / this.scaleY;
+    this.body.setSize(w, h, false);
+    this.body.setOffset((this.width - w) / 2, this.height - h);
+  }
+
+  // Run, jump and stand poses. Riding uses one picture, with the duck's air puffs and waddle.
+  animate(time, onGround) {
+    if (this.riding) return this.puffs.update(time, this, onGround);
+    let pose = 'idle';
+    if (!onGround) pose = 'jump';
+    else if (Math.abs(this.body.velocity.x) > 10) {
+      // The sheet has one running pose; alternating it with standing gives a two-step run cycle.
+      const stepMs = Math.abs(this.body.velocity.x) > 120 ? 90 : 140;
+      pose = Math.floor(time / stepMs) % 2 ? 'run' : 'idle';
+    }
+    this.setTexture(`${this.look}-${pose}`);
+  }
+
+  // Swap texture and hitbox while keeping the feet where they were.
+  resize(texture, size) {
+    const bottom = this.body.bottom;
+    const velocity = this.body.velocity.clone();
+    this.setTexture(texture);
+    this.fitBody(size);
+    this.body.reset(this.x, bottom - this.displayHeight / 2);
+    this.body.setVelocity(velocity.x, velocity.y);
+  }
+}
+
+function approach(value, target, step) {
+  return value < target ? Math.min(value + step, target) : Math.max(value - step, target);
+}

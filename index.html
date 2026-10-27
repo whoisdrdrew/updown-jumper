@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>UP DOWN JUMPER</title>
+    <!-- Installable as a phone app: Add to Home Screen opens it full screen with its own icon. -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#12081c" />
+    <link rel="icon" type="image/png" href="icons/favicon-64.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="UpDown" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #12081c; color: #ccc; font-family: monospace; }
+      body { display: flex; flex-direction: column; }
+      #game { flex: 1; min-height: 0; }
+      #help { padding: 6px 12px; font-size: 13px; text-align: center; }
+      kbd { background: #333; border-radius: 3px; padding: 1px 5px; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="help">
+      Move <kbd>&larr;</kbd><kbd>&rarr;</kbd> &middot;
+      Jump <kbd>&uarr;</kbd> (hold for higher) &middot;
+      Shoot a collected rubber duck <kbd>Space</kbd> (hold to run) &middot;
+      VIP door <kbd>&uarr;</kbd> &middot;
+      Restart <kbd>R</kbd> &middot;
+      Story: <kbd>&uarr;</kbd> or <kbd>Space</kbd> to continue, <kbd>S</kbd> to start it over
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
