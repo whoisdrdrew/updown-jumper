@@ -74,3 +74,22 @@ export function markNugget(level) {
   if (!saved.nuggets.includes(level)) saved.nuggets.push(level);
   save(saved);
 }
+
+// The DJ picked in the studio's Line-Up: he stands at the desk and his songs lead the song menu.
+const DJ = 'updown-jumper.dj';
+
+export function chosenDj() {
+  try {
+    return localStorage.getItem(DJ) || 'boris';
+  } catch {
+    return 'boris';
+  }
+}
+
+export function chooseDj(id) {
+  try {
+    localStorage.setItem(DJ, id);
+  } catch {
+    // Not saved; the pick lasts until the page reloads.
+  }
+}
