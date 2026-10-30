@@ -450,7 +450,7 @@ export default class HomeScene extends Phaser.Scene {
       const status = item > this.reachable ? ': LOCKED' : BUILT.has(item) ? '' : ': COMING SOON';
       setLine(line1, `LEVEL ${item}${status}`);
       const boss = item <= this.reachable && BOSSES[item] ? BOSSES[item] : '???';
-      setLine(line2, `BOSS: ${boss}   PLAY AS: ${this.dj.walks ? this.dj.name : 'BORIS'}`);
+      setLine(line2, `BOSS: ${boss}   PLAY AS: ${this.dj.name}`);
     };
     win.move = (dx, dy) => {
       if (dy < 0) return win.confirm();

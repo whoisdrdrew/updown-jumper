@@ -53,6 +53,12 @@ import solomunCloudFront0 from './solomun/cloud-front-0.png';
 import solomunCloudFront1 from './solomun/cloud-front-1.png';
 import airPuff from './world/air-puff.png';
 
+// Other DJs' walking pictures (art/<dj>/playable/): the same poses and sizes as Boris's, so they move
+// the same. hero/ is drawn for both his masked and bare looks (only Boris wears the mask), hero-big/ for
+// both big ones. Loaded as '<dj>-hero-idle', '<dj>-bare-idle', '<dj>-big-hero-idle' and so on.
+const djPoses = import.meta.glob('./*/playable/*/*.png', { eager: true, import: 'default' });
+export const DJ_SKINS = [...new Set(Object.keys(djPoses).map((path) => path.split('/')[1]))];
+
 // The hero's poses, cut from Sandro's pose sheets (art/hero-poses*.png in the project files).
 // 'hero-*' wears the mask; 'bare-*' is the same pose without it (art/hero-poses-no-mask.png).
 // 'big-hero-*' and 'big-bare-*' are big Boris after eating a burger (art/hero-big/), about 1.3x as tall.
@@ -76,6 +82,12 @@ export function preloadSprites(scene) {
   scene.load.image('big-bare-run', bigBareRun);
   scene.load.image('big-bare-jump', bigBareJump);
   scene.load.image('big-bare-sit', bigBareSit);
+  for (const [path, url] of Object.entries(djPoses)) {
+    const [, dj, , folder, file] = path.split('/');
+    const pose = file.replace('.png', '');
+    const looks = folder === 'hero-big' ? ['big-hero', 'big-bare'] : ['hero', 'bare'];
+    looks.forEach((look) => scene.load.image(`${dj}-${look}-${pose}`, url));
+  }
   // The masked rubber duck: the ride-on one is drawn by tools/world_art.py, the little ones you
   // collect and shoot are drawn by hand at their own size. Both are shown at DUCK_SCALE, like the hero.
   scene.load.image('big-duck', duckBig);
@@ -149,5 +161,7 @@ function makeRider(scene, look) {
 }
 
 export function createSprites(scene) {
-  for (const look of ['hero', 'bare', 'big-hero', 'big-bare']) makeRider(scene, look);
+  for (const skin of ['', ...DJ_SKINS.map((dj) => `${dj}-`)]) {
+    for (const look of ['hero', 'bare', 'big-hero', 'big-bare']) makeRider(scene, skin + look);
+  }
 }

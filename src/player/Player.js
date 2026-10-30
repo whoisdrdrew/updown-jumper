@@ -15,8 +15,10 @@ const SIZE = {
 // Events it emits for the scene: 'hurt' (hitsTaken), 'dead', 'dismount' (x, y, dir), 'ammo' (count),
 // 'grow', 'shrink'.
 export default class Player extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, input) {
-    super(scene, x, y, 'bare-idle');
+  // skin: '' for Boris, or another DJ's picture prefix like 'solomun-' (src/djs.js).
+  constructor(scene, x, y, input, skin = '') {
+    super(scene, x, y, `${skin}bare-idle`);
+    this.skin = skin;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setScale(HERO_SCALE);
@@ -47,9 +49,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     return this.flipX ? -1 : 1;
   }
 
-  // Which set of pictures to draw: 'hero' with the mask, 'bare' without; 'big-' after a burger.
+  // Which set of pictures to draw: 'hero' with the mask, 'bare' without; 'big-' after a burger; after
+  // the DJ's skin.
   get look() {
-    return (this.big ? 'big-' : '') + (this.masked ? 'hero' : 'bare');
+    return this.skin + (this.big ? 'big-' : '') + (this.masked ? 'hero' : 'bare');
   }
 
   get invulnerable() {
