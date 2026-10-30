@@ -1,9 +1,12 @@
 // The home screen: Boris's music studio, after Sandro's reference photos (a desk with a PC, big
 // speakers, sound panels, headphones). Drawn at the hero's pixel size by the art thread; the home
 // screen shows it 1:1 on the 640x360 canvas, so the numbers below are picture pixels.
-import studio from './home/studio.png';
-import select0 from './home/select-0.png';
-import select1 from './home/select-1.png';
+import studio from './home/v3/studio.png';
+import sectionSelect0 from './home/v3/section-select-0.png';
+import sectionSelect1 from './home/v3/section-select-1.png';
+import borisPortrait from './intro/portrait-boris.png';
+import solomunPortrait from './solomun/portrait.png';
+import solomunDesk from './solomun/photo-pose.png';
 import playButton from './home/play-button.png';
 import playButtonOn from './home/play-button-on.png';
 import playSelect0 from './home/play-select-0.png';
@@ -18,17 +21,20 @@ import eq2 from './home/eq-2.png';
 const cards = import.meta.glob('./home/cards/*.png', { eager: true, import: 'default' });
 
 export const LEVEL_COUNT = 10;
-// Top-left of each level's card on the two strings, level 1..10.
-export const CARD_AT = [
-  [41, 67], [83, 71], [125, 73], [167, 72], [209, 67],
-  [389, 67], [431, 71], [473, 73], [515, 72], [557, 67],
+// The studio wall (menu v3, art/hub/v3): four sections, two either side of the middle panel with the
+// title and the play button. x, y, w, h; the blinking highlight goes at x - 2, y - 2.
+export const SECTIONS = [
+  { id: 'world', name: 'BORIS WORLD', x: 48, y: 60, w: 99, h: 147 },
+  { id: 'bookings', name: 'NEW BOOKINGS', x: 148, y: 60, w: 99, h: 147 },
+  { id: 'stages', name: 'SPECIAL STAGES', x: 392, y: 60, w: 99, h: 147 },
+  { id: 'lineup', name: 'LINE-UP', x: 492, y: 60, w: 99, h: 147 },
 ];
+// A section's window, over the studio dimmed to 35%.
+export const WINDOW = { x: 80, y: 40, w: 480, h: 280 };
 // The photo window on a finished card (transparent; the level's winner photo goes under it).
 export const CARD_WINDOW = { x: 4, y: 10, w: 32, h: 22 };
-export const SELECT_OFFSET = { x: -3, y: 3 };
 // Free floor in front of Boris: the level hint goes here, in a dark box.
 export const HINT_AREA = { x: 200, y: 312, w: 240, h: 36 };
-export const TITLE_PANEL = { x: 268, y: 64, w: 103, h: 65 };
 // The menu music: the round play button on the middle panel (its blinking ring at -5,-5), and the
 // song picker (304x168, centred), positions inside it.
 export const PLAY_POS = { x: 303, y: 146 };
@@ -42,8 +48,11 @@ export const cardKey = (level, state) => `home-card-${level}-${state}`;
 
 export function preloadHome(scene) {
   scene.load.image('home-studio', studio);
-  scene.load.image('home-select-0', select0);
-  scene.load.image('home-select-1', select1);
+  scene.load.image('home-section-select-0', sectionSelect0);
+  scene.load.image('home-section-select-1', sectionSelect1);
+  scene.load.image('lineup-boris', borisPortrait);
+  scene.load.image('lineup-solomun', solomunPortrait);
+  scene.load.image('home-solomun', solomunDesk);
   scene.load.image('home-play', playButton);
   scene.load.image('home-play-on', playButtonOn);
   scene.load.image('home-play-select-0', playSelect0);
