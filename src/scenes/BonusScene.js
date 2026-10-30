@@ -9,7 +9,8 @@ import { addExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
 import { preloadNuggets } from '../art/afterparty.js';
 import { preloadVipFx } from '../art/vipFx.js';
 import VipFx from '../objects/VipFx.js';
-import { hasNugget, markNugget } from '../progress.js';
+import { hasNugget, markNugget, chosenDj } from '../progress.js';
+import { djById } from '../djs.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -67,7 +68,7 @@ export default class BonusScene extends Phaser.Scene {
     this.addHint();
 
     this.controls = new Controls(this);
-    this.player = new Player(this, DOOR_X + 24, FLOOR - 12, this.controls).setDepth(5);
+    this.player = new Player(this, DOOR_X + 24, FLOOR - 12, this.controls, djById(chosenDj()).skin).setDepth(5);
     this.player.masked = !!data.masked;
     this.player.setBig(!!data.big);
     this.physics.add.collider(this.player, [this.floor, this.gate]);

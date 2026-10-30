@@ -19,7 +19,8 @@ import { createBackground, preloadBackground } from '../art/background.js';
 import { preloadBonus, BONUS_SCALE } from '../art/bonus.js';
 import { preloadFelix } from '../art/felix.js';
 import { touch } from '../touch/TouchControls.js';
-import { markLevelDone } from '../progress.js';
+import { markLevelDone, chosenDj } from '../progress.js';
+import { djById } from '../djs.js';
 import { CARD_WINDOW } from '../art/home.js';
 
 const FONT = '"Press Start 2P", monospace';
@@ -64,7 +65,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH, true, true, false, false);
 
     this.controls = new Controls(this);
-    this.player = new Player(this, start.x, start.y, this.controls);
+    this.player = new Player(this, start.x, start.y, this.controls, djById(chosenDj()).skin);
     this.blocks = new Blocks(this, layer, view, blockContents);
     this.physics.add.collider(this.player, layer, (player, tile) => this.blocks.onPlayerCollide(player, tile));
     this.addItems(layer, guards, eggs, pickups);
