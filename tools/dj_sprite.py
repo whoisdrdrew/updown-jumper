@@ -93,6 +93,11 @@ def dress(a, head, d):
         if nb:
             a[y, x, :3] = Counter(nb).most_common(1)[0][0]
     a = recolour(a, {**d['shirt'], **d['pants'], **d['skin']})
+    # An arm raised above the shoulders (big jump) stays: whatever sits clearly right of the skull.
+    hy = np.where(a[:cut, :, 3].any(1))[0]
+    skull_r = max(np.where(a[y, :, 3])[0].max() for y in hy[:4])
+    arm = np.zeros((h, w), bool); arm[:cut, skull_r + 3:] = a[:cut, skull_r + 3:, 3] > 0
+    arm_px = a.copy() if arm.sum() >= 15 else None
     a[:cut] = 0
     # Paste the head: chin on the shirt's top row, centred where Boris's head was.
     hh, hw = head.shape[:2]
@@ -104,6 +109,8 @@ def dress(a, head, d):
         for x in range(hw):
             if head[y, x, 3] and 0 <= tx + x < w:
                 a[ty + y, tx + x] = head[y, x]
+    if arm_px is not None:
+        a[pad:][arm] = arm_px[arm]
     return a[pad:] if pad else a, pad
 
 
