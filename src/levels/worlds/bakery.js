@@ -1,7 +1,8 @@
 // WORLD: BAKERY, steve-aoki's world: the cake factory: bakery racks, a cake production line, conveyor belts and robot arms (levels-input/steve-aoki/world 01-05).
 // Looks only. Gameplay files (src/levels/gameplay/) name this world but never change it.
-// Art: tools/world_djs.py draws the four layers into src/art/world/bakery/ (a first pass, made to be
-// redrawn); the 'layers' builder in src/art/background.js puts them together.
+// Art: made in Higgsfield (pictures in project files art/worlds/bakery/), shrunk into
+// src/art/world/bakery/ with `python3 tools/hf_world.py <dir> bakery far=0.55,0.6,0.5 mid=1,0.68,0.5
+// near=1,0.765,0.5 seam=mid:mirror seam=near:mirror dim=near:0.7`; the 'layers' builder in src/art/background.js puts them together.
 export default {
   id: 'bakery',
   name: 'BAKERY', // top bar
@@ -13,10 +14,10 @@ export default {
   tiles: 'tiles', // tileset (src/art/world/tiles.png, shared for now)
   pit: 'black',
   layers: [
-    'sky: the factory hall, tall windows and roof trusses (fixed)',
-    'far: racks of finished cakes on trolleys (0.06)',
-    'mid: conveyor belts carrying cakes, orange robot arms (0.16)',
-    'near: flour sacks and stacked trays (0.35)',
+    'sky: the factory hall at night, tall windows, roof trusses, party spotlights and bunting (fixed)',
+    'far: three racks of birthday cakes with balloons (0.05)',
+    'mid: a conveyor belt of cakes with two orange robot arms (0.15)',
+    'near: bakers at work tables, flour sacks and tray trolleys; no crowd (0.35)',
   ],
   motifs: ['conveyor belts as long platforms', 'stacked trays as stairs', 'cakes (boss)'],
 };
