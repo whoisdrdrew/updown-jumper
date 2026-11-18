@@ -8,7 +8,8 @@ sits, as a share of the height: 0.5 = halfway down) and x (where its centre sits
 the width). dim=<layer>:<factor> darkens a layer (0.75 = 75% bright) so the players stand
 out against it. repeat=<layer>:<n> places a
 placed part n times evenly across the width (x is then ignored). seam=<layer>:mirror keeps the left half of a layer and adds it mirrored, for a band that
-runs the whole width but doesn't tile by itself. The layers tile sideways, so nothing should touch the left or right edge unless it
+runs the whole width but doesn't tile by itself. seam=<layer>:edge keeps the middle as drawn and only
+replaces the right 30% with the left 30% mirrored, softly joined (for a band with one feature in the middle). The layers tile sideways, so nothing should touch the left or right edge unless it
 runs the whole width (a crowd). Everything below about y=265 is behind the ground tiles."""
 import sys, os
 from PIL import Image
@@ -25,7 +26,8 @@ for arg in sys.argv[3:]:
         layer_name, n = vals.split(':')
         rep[layer_name] = int(n)
     elif name == 'seam':
-        seam[vals.split(':')[0]] = True
+        layer_name, kind = (vals.split(':') + ['mirror'])[:2]
+        seam[layer_name] = kind
     else:
         place[name] = [float(v) for v in vals.split(',')]
 
@@ -36,7 +38,16 @@ for i, name in enumerate(['sky', 'far', 'mid', 'near']):
     im = Image.open(os.path.join(SRC, f'{name}.png')).convert('RGBA')
     k = W / im.width
     im = im.resize((W, round(im.height * k)), Image.BOX)
-    if name in seam:
+    if seam.get(name) == 'edge':
+        # the right 30% becomes the left 30% mirrored, so the tiles join exactly; a soft 32 px join inside
+        e = round(W * 0.3)
+        flip = im.crop((0, 0, e, im.height)).transpose(Image.FLIP_LEFT_RIGHT)
+        right = im.crop((W - e, 0, W, im.height))
+        mask = Image.new('L', (e, im.height))
+        for x in range(e):
+            mask.paste(min(255, round(255 * x / 32)), (x, 0, x + 1, im.height))
+        im.paste(Image.composite(flip, right, mask), (W - e, 0))
+    elif name in seam:
         # keep the first half and add it again mirrored: both joins then match exactly
         half = im.crop((0, 0, W // 2, im.height))
         im = Image.new('RGBA', (W, im.height))
