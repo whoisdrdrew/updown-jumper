@@ -6,7 +6,8 @@ other worlds). sky is opaque and does not scroll. far, mid and near keep their t
 optional placement moves the drawn part: scale (1 = as drawn), bottom (where its lowest pixel
 sits, as a share of the height: 0.5 = halfway down) and x (where its centre sits, as a share of
 the width). dim=<layer>:<factor> darkens a layer (0.75 = 75% bright) so the players stand
-out against it. seam=<layer>:mirror keeps the left half of a layer and adds it mirrored, for a band that
+out against it. repeat=<layer>:<n> places a
+placed part n times evenly across the width (x is then ignored). seam=<layer>:mirror keeps the left half of a layer and adds it mirrored, for a band that
 runs the whole width but doesn't tile by itself. The layers tile sideways, so nothing should touch the left or right edge unless it
 runs the whole width (a crowd). Everything below about y=265 is behind the ground tiles."""
 import sys, os
@@ -14,12 +15,15 @@ from PIL import Image
 
 W, H = 640, 360
 SRC, ART = sys.argv[1], sys.argv[2]
-place, dim, seam = {}, {}, {}
+place, dim, seam, rep = {}, {}, {}, {}
 for arg in sys.argv[3:]:
     name, vals = arg.split('=')
     if name == 'dim':
         layer_name, f = vals.split(':')
         dim[layer_name] = float(f)
+    elif name == 'repeat':
+        layer_name, n = vals.split(':')
+        rep[layer_name] = int(n)
     elif name == 'seam':
         seam[vals.split(':')[0]] = True
     else:
@@ -56,7 +60,10 @@ for i, name in enumerate(['sky', 'far', 'mid', 'near']):
             part = part.resize((max(1, round(part.width * s)), max(1, round(part.height * s))), Image.BOX)
             pa = part.getchannel('A').point(lambda v: 255 if v >= 128 else 0)
             part.putalpha(pa)
-            layer.alpha_composite(part, (round(cx * W - part.width / 2), round(bottom * H - part.height)))
+            n = rep.get(name, 1)
+            for k in range(n):
+                x = cx * W if n == 1 else (k + 0.5) * W / n
+                layer.alpha_composite(part, (round(x - part.width / 2), round(bottom * H - part.height)))
         else:
             layer.alpha_composite(im.crop((0, 0, W, min(H, im.height))), (0, 0))
     if name in dim:
