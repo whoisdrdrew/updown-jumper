@@ -18,6 +18,8 @@ import eq0 from './home/eq-0.png';
 import eq1 from './home/eq-1.png';
 import eq2 from './home/eq-2.png';
 
+import { preloadDjArt } from './djArt.js';
+
 const cards = import.meta.glob('./home/cards/*.png', { eager: true, import: 'default' });
 
 export const LEVEL_COUNT = 10;
@@ -61,6 +63,7 @@ export function preloadHome(scene) {
   scene.load.image('home-song-select-0', songRowSelect0);
   scene.load.image('home-song-select-1', songRowSelect1);
   [eq0, eq1, eq2].forEach((url, i) => scene.load.image(`home-eq-${i}`, url));
+  preloadDjArt(scene); // the other DJs' faces and desk pictures
   for (const [path, url] of Object.entries(cards)) {
     const [, n, state] = path.match(/card-(\d+)-(\w+)\.png$/);
     scene.load.image(cardKey(Number(n), state), url);

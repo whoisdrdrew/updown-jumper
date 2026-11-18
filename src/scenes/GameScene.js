@@ -58,7 +58,7 @@ export default class GameScene extends Phaser.Scene {
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
-    this.updateBackground = createBackground(this, worldW, worldH, world.background);
+    this.updateBackground = createBackground(this, worldW, worldH, world.background, world);
     this.add.existing(layer);
     this.add.existing(view);
     this.layer = layer;
@@ -236,7 +236,9 @@ export default class GameScene extends Phaser.Scene {
     this.add.image(ux + left, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
     this.ammoText = text(left + 7, 18, '');
     text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
-    text(GAME_WIDTH / 2, 15, `${this.world.name} WORLD ${this.level}-1`, 0.5);
+    // A long world name drops the word WORLD so it doesn't run into the duck counter.
+    const worldName = this.world.name.length > 10 ? this.world.name : `${this.world.name} WORLD`;
+    text(GAME_WIDTH / 2, 15, `${worldName} ${this.level}-1`, 0.5);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeText = text(GAME_WIDTH - 6, 15, '', 1);
 
@@ -334,7 +336,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // The boss arena: one screen wide, centred on the K in the level. Walking in shuts it, like the
-  // boss rooms in Mario 3, and it opens again (on the way to the flag) once Solomun is beaten.
+  // boss rooms in Mario 3, and it opens again (on the way to the flag) once the boss is beaten.
   addBossArena(at) {
     const floor = this.findGroundBelow(at.x, at.y);
     const half = GAME_WIDTH / 2;
@@ -382,9 +384,11 @@ export default class GameScene extends Phaser.Scene {
     // His hit points under the clock, like a boss bar.
     const { x: ux, y: uy } = this.ui;
     const right = ux + GAME_WIDTH - 6;
-    this.bossHud = [this.add.image(right - 38, uy + 31, bossInfo.portrait).setScale(0.5).setOrigin(1, 0.5)];
+    // The hearts end at the right edge; tougher bosses (more hits) push the portrait left.
+    const firstHeart = right - 10 - (boss.hitsLeft - 1) * 10;
+    this.bossHud = [this.add.image(firstHeart - 8, uy + 31, bossInfo.portrait).setScale(0.5).setOrigin(1, 0.5)];
     for (let i = 0; i < boss.hitsLeft; i++) {
-      this.bossHud.push(this.add.image(right - 30 + i * 10, uy + 31, 'heart').setScale(ITEM_SCALE));
+      this.bossHud.push(this.add.image(firstHeart + i * 10, uy + 31, 'heart').setScale(ITEM_SCALE));
     }
     this.bossHud.forEach((o) => o.setScrollFactor(0).setDepth(10));
 

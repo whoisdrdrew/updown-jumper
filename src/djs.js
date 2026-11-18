@@ -3,7 +3,7 @@
 // the song menu when he is picked; skin: the prefix of his walking pictures in the levels (src/art/<dj>/
 // playable/, '' for Boris). A song has a url (an MP3) or a beat (made live by BossBeat).
 import { SONGS } from './audio/songs.js';
-import { BOSS_SONG } from './audio/BossBeat.js';
+import { BOSSES_BY_LEVEL } from './bosses/index.js';
 import { levelsDone } from './progress.js';
 
 export const LINEUP_SIZE = 30;
@@ -13,12 +13,13 @@ export const DJ_ROSTER = [
     id: 'boris', name: 'BORIS', desk: 'home-boris', portrait: 'lineup-boris', songs: SONGS, skin: '',
     unlocked: () => true,
   },
-  {
-    id: 'solomun', name: 'SOLOMUN', desk: 'home-solomun', portrait: 'lineup-solomun',
-    songs: [{ name: 'SOLOMUN BEAT', beat: BOSS_SONG }], skin: 'solomun-',
-    levels: [1], // the world 1 boss
-    unlocked: () => levelsDone() >= 1,
-  },
+  // The end bosses, in level order (src/bosses/): each joins once his level is won.
+  ...BOSSES_BY_LEVEL.map((boss) => ({
+    id: boss.id, name: boss.name, desk: `home-${boss.id}`, portrait: `lineup-${boss.id}`,
+    songs: [{ name: `${boss.name} BEAT`, beat: boss.song }], skin: `${boss.id}-`,
+    levels: [boss.level],
+    unlocked: () => levelsDone() >= boss.level,
+  })),
 ];
 
 export const djById = (id) => DJ_ROSTER.find((dj) => dj.id === id && dj.unlocked()) || DJ_ROSTER[0];

@@ -13,11 +13,20 @@ import tulumCrowd3 from './world/solomun/crowd-3.png';
 // Each world has a backdrop themed on its DJ boss, in layers that scroll at different speeds.
 //   club:    sunset sky, the venue with its stage screen, moving light beams, the crowd and palms.
 //   tulum:   the wooden beach hut of his Tulum set, wicker lamps and a dancing crowd.
+//   layers:  the DJ worlds of levels 2+ (tools/world_djs.py): four pictures in src/art/world/<art>/
+//            (0-sky, 1-far, 2-mid, 3-near) scrolled at the world file's `parallax` speeds, plus an
+//            optional `effect` on top (snow, embers, sparkles, beams).
 // Pits are plain black gaps in every world, like Mario 3.
 
 // The layers are drawn by tools/world_art.py and tools/world_solomun.py at the hero's pixel size
 // (twice the world resolution) and shown at half size.
 const ART_SCALE = 0.5;
+
+const worldLayers = import.meta.glob('./world/*/[0-9]-*.png', { eager: true, import: 'default' });
+const layerKey = (path) => {
+  const [, , art, file] = path.split('/');
+  return `world-${art}-${file[0]}`;
+};
 
 const TULUM_CROWD = [tulumCrowd0, tulumCrowd1, tulumCrowd2, tulumCrowd3];
 // Near lamps in tulum lamps.png: centre x and glow centre y in picture pixels (matches NEAR_LAMPS).
@@ -35,10 +44,12 @@ export function preloadBackground(scene) {
   scene.load.image('tulum-roof', tulumRoofImage);
   scene.load.image('tulum-lamps', tulumLampsImage);
   TULUM_CROWD.forEach((image, i) => scene.load.image(`tulum-crowd-${i}`, image));
+  for (const [path, url] of Object.entries(worldLayers)) scene.load.image(layerKey(path), url);
 }
 
-// theme: the world's `background` key (src/levels/worlds/): 'tulum' or 'club'.
-export function createBackground(scene, worldW, worldH, theme = 'tulum') {
+// theme: the world's `background` key (src/levels/worlds/): 'tulum', 'club' or 'layers'; world: the
+// whole world file (the 'layers' builder reads its art folder, parallax and effect).
+export function createBackground(scene, worldW, worldH, theme = 'tulum', world = {}) {
   // Fixed layers sit at the camera's zoom offset, so they fill the zoomed view.
   const cam = scene.cameras.main;
   const ox = (cam.width - cam.width / cam.zoom) / 2;
@@ -48,7 +59,8 @@ export function createBackground(scene, worldW, worldH, theme = 'tulum') {
   const layer = (key, x, y, w, h, scroll) =>
     scene.add.tileSprite(x, y, w / ART_SCALE, h / ART_SCALE, key).setOrigin(0).setScale(ART_SCALE).setScrollFactor(scroll);
 
-  const updateWorld = theme === 'club' ? clubLayers(scene, cam, ox, oy, layer) : tulumLayers(scene, cam, ox, oy, layer);
+  const builders = { club: clubLayers, tulum: tulumLayers, layers: djLayers };
+  const updateWorld = (builders[theme] ?? tulumLayers)(scene, cam, ox, oy, layer, world);
   // Black from the top of the ground (three tile rows) down, so a pit is a black gap; the ground
   // tiles cover it everywhere else.
   scene.add.rectangle(0, worldH - 48, worldW, 64, 0x000000).setOrigin(0);
@@ -119,5 +131,58 @@ function tulumLayers(scene, cam, ox, oy, layer) {
     crowd.forEach((c) => {
       c.tilePositionX = (cam.scrollX * 0.4) / ART_SCALE;
     });
+  };
+}
+
+// A DJ world: its four layers, back to front, each scrolling at its parallax speed, and an effect.
+function djLayers(scene, cam, ox, oy, layer, world) {
+  const speeds = world.parallax ?? [0, 0.08, 0.18, 0.35];
+  const layers = speeds.map((_s, i) => layer(`world-${world.art}-${i}`, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0));
+  const updateEffect = addEffect(scene, ox, oy, world.effect);
+  return function update(time) {
+    layers.forEach((l, i) => {
+      l.tilePositionX = (cam.scrollX * speeds[i]) / ART_SCALE;
+    });
+    updateEffect(time);
+  };
+}
+
+// Little moving things over the backdrop (behind the level), fixed to the screen.
+const EFFECTS = {
+  snow: { count: 40, colors: [0xfdfefd, 0xcfd8ec], fall: [12, 26], drift: 8, size: 1 },
+  embers: { count: 22, colors: [0xf5b04a, 0xe0801e, 0xffe08a], fall: [-18, -8], drift: 6, size: 1 },
+  sparkles: { count: 26, colors: [0xfdfefd, 0xf5c35c, 0x7ad0ff, 0xff6aa8], fall: [0, 0], drift: 0, size: 1, twinkle: true },
+  beams: { beams: [0xff5a8a, 0x7ad0ff, 0xffd060, 0xff5a8a] },
+};
+
+function addEffect(scene, ox, oy, name) {
+  const fx = EFFECTS[name];
+  if (!fx) return () => {};
+  if (fx.beams) {
+    fx.beams.forEach((color, i) => {
+      const beam = scene.add.triangle(ox + 40 + i * 80, oy, 0, 0, -12, 140, 12, 140, color, 0.14)
+        .setOrigin(0, 0).setBlendMode(Phaser.BlendModes.ADD).setScrollFactor(0);
+      scene.tweens.add({ targets: beam, angle: { from: -28, to: 28 }, duration: 2000 + i * 350, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 250 });
+    });
+    return () => {};
+  }
+  const dots = [];
+  for (let i = 0; i < fx.count; i++) {
+    const dot = scene.add.rectangle(0, 0, fx.size, fx.size, fx.colors[i % fx.colors.length])
+      .setOrigin(0).setScrollFactor(0).setAlpha(0.8);
+    dot.bx = Math.random() * GAME_WIDTH;
+    dot.by = Math.random() * GAME_HEIGHT;
+    dot.speed = Phaser.Math.FloatBetween(fx.fall[0], fx.fall[1]);
+    dot.phase = Math.random() * Math.PI * 2;
+    dots.push(dot);
+  }
+  return function update(time) {
+    const t = time / 1000;
+    for (const d of dots) {
+      const y = Phaser.Math.Wrap(d.by + d.speed * t, 0, GAME_HEIGHT - 40);
+      const x = Phaser.Math.Wrap(d.bx + Math.sin(t + d.phase) * fx.drift, 0, GAME_WIDTH);
+      d.setPosition(ox + Math.round(x), oy + Math.round(y));
+      if (fx.twinkle) d.setAlpha(0.3 + 0.7 * Math.max(0, Math.sin(t * 3 + d.phase)));
+    }
   };
 }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import Controls from '../player/Controls.js';
 import BossBeat from '../audio/BossBeat.js';
+import { BOSSES } from '../bosses/index.js';
 import MenuMusic from '../audio/MenuMusic.js';
 import { SONGS, SONG_BPM } from '../audio/songs.js';
 import heroIdle from '../art/hero/idle.png';
@@ -237,7 +238,7 @@ export default class AfterpartyScene extends Phaser.Scene {
         this.showHint();
       });
     } else {
-      const beat = (this.beats[dj.beat] ??= new BossBeat(this.sound.context));
+      const beat = (this.beats[dj.beat] ??= new BossBeat(this.sound.context, BOSSES[dj.beat]?.song));
       beat.start();
       beatMs = 60000 / beat.song.bpm;
     }

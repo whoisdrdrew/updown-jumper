@@ -12,6 +12,7 @@ import trampoline0 from './bonus/trampoline-0.png';
 import trampoline1 from './bonus/trampoline-1.png';
 import portrait from './bonus/portrait-solomun.png';
 import portraitFrame from './bonus/portrait-frame.png';
+import { preloadDjArt } from './djArt.js';
 
 export const BONUS_SCALE = 0.5;
 // Where the popup's question goes inside popup-timer.png (art pixels): x, y, width, height.
@@ -29,7 +30,7 @@ const IMAGES = {
   'bonus-lounge': lounge,
   'trampoline-0': trampoline0,
   'trampoline-1': trampoline1,
-  'bonus-portrait': portrait,
+  'bonus-portrait-solomun': portrait,
   'bonus-portrait-frame': portraitFrame,
 };
 
@@ -37,4 +38,5 @@ export function preloadBonus(scene) {
   for (const [key, url] of Object.entries(IMAGES)) {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
   }
+  preloadDjArt(scene); // the other bosses' portraits: 'bonus-portrait-<id>'
 }
