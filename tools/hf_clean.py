@@ -82,3 +82,33 @@ def place(rgba, w, h, anchor='bottom'):
 
 def save(rgba, path):
     Image.fromarray(rgba.astype(np.uint8), 'RGBA').save(path)
+
+def main_shape(rgba, keep=0.15):
+    """Drop loose bits (a thrown prop floating free, specks): keep the biggest connected shape
+    and anything at least `keep` times its size."""
+    s = rgba[..., 3] > 0
+    lab = np.zeros(s.shape, int)
+    sizes = []
+    h, w = s.shape
+    for y0, x0 in zip(*np.where(s)):
+        if lab[y0, x0]:
+            continue
+        n = len(sizes) + 1
+        stack, count = [(y0, x0)], 0
+        lab[y0, x0] = n
+        while stack:
+            y, x = stack.pop()
+            count += 1
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    ny, nx = y + dy, x + dx
+                    if 0 <= ny < h and 0 <= nx < w and s[ny, nx] and not lab[ny, nx]:
+                        lab[ny, nx] = n
+                        stack.append((ny, nx))
+        sizes.append(count)
+    if len(sizes) > 1:
+        big = max(sizes)
+        for i, c in enumerate(sizes, 1):
+            if c < keep * big:
+                rgba[lab == i, 3] = 0
+    return rgba

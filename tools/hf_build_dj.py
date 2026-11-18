@@ -3,7 +3,7 @@ python3 build_dj.py <concept dir with idle,run,jump,sit,attack,defeat,photo,port
 import sys, os, numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from hf_clean import load, cells, palette, snap, tidy, crop, save
+from hf_clean import load, cells, palette, snap, tidy, crop, save, main_shape
 
 SRC, REPO, ID = sys.argv[1:4]
 NCOL = int(os.environ.get('NCOL', 32))
@@ -12,9 +12,20 @@ poses = ['idle', 'run', 'jump', 'sit', 'attack', 'defeat', 'photo']
 L = {p: load(f'{SRC}/{p}.png') for p in poses}
 idle_h = L['idle'][3][1] - L['idle'][3][0]
 
+def head_w(p):
+    """Width of the head in concept pixels: the widest row in the top 22% of the character."""
+    a, fg, bg, box = L[p]
+    y0, y1 = box[0], box[0] + int((L['idle'][3][1] - L['idle'][3][0]) * 0.22)
+    rows = fg[y0:y1, box[2]:box[3]]
+    return max((np.ptp(np.where(r)[0]) + 1) if r.any() else 0 for r in rows)
+
+HEAD_FIX = os.environ.get('HEAD_FIX', '0') == '1'
+
 def build(p, target):
     a, fg, bg, box = L[p]
     step = idle_h / target
+    if HEAD_FIX:
+        step *= head_w(p) / head_w('idle')
     return cells(a, fg, box, int(round((box[1] - box[0]) / step)))
 
 small = {p: build(p, SMALL_H) for p in ['idle', 'run', 'jump', 'sit']}
@@ -22,7 +33,7 @@ big = {p: build(p, BIG_H) for p in poses}
 pal = palette(list(small.values()) + list(big.values()), NCOL)
 for d in (small, big):
     for p in d:
-        d[p] = crop(tidy(snap(d[p], pal)))
+        d[p] = crop(main_shape(tidy(snap(d[p], pal))))
 
 def head_x(r):
     """Centre of the head: middle of the solid pixels in the top quarter."""
