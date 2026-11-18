@@ -9,10 +9,10 @@ import RideDucks from '../objects/RideDucks.js';
 import Burgers from '../objects/Burgers.js';
 import Blocks, { T } from '../objects/Blocks.js';
 import Suitcase from '../objects/Suitcase.js';
-import Boss from '../objects/Boss.js';
+import { BOSSES } from '../bosses/index.js';
 import takeWinnerPhoto from '../objects/WinnerPhoto.js';
 import { addExitButton, preloadExitButton, EXIT_BUTTON_WIDTH } from '../objects/ExitButton.js';
-import { PLAYER, GAME_WIDTH, LEVEL_TIME, ZOOM, BOSS, BONUS, SECURITY } from '../config.js';
+import { PLAYER, GAME_WIDTH, ZOOM, BOSS, BONUS, SECURITY } from '../config.js';
 import { createSprites, preloadSprites, DUCK_SCALE, ITEM_SCALE } from '../art/sprites.js';
 import { preloadTiles, TILE_ART, TILE_SCALE } from '../art/tiles.js';
 import { createBackground, preloadBackground } from '../art/background.js';
@@ -24,7 +24,7 @@ import { djById } from '../djs.js';
 import { CARD_WINDOW } from '../art/home.js';
 
 const FONT = '"Press Start 2P", monospace';
-import testLevel from '../levels/testLevel.js';
+import { levelData } from '../levels/index.js';
 
 
 export default class GameScene extends Phaser.Scene {
@@ -42,19 +42,23 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create(data) {
-    // Which level (1..10) this is; a restart keeps the one being played. Only level 1 is built so far.
+    // Which level this is; a restart keeps the one being played. Its GAMEPLAY (blocks, enemies,
+    // boss tuning, clock) and WORLD (backdrop, name) come from src/levels/.
     this.level = data?.level ?? this.level ?? 1;
+    const { gameplay, world } = levelData(this.level) ?? levelData(1);
+    this.gameplay = gameplay;
+    this.world = world;
     this.winnerPhoto = null;
     // Zoom first: the fixed background and top bar are placed relative to the zoomed view.
     const cam = this.cameras.main;
     cam.setZoom(ZOOM);
     this.ui = { x: (cam.width - cam.width / ZOOM) / 2, y: (cam.height - cam.height / ZOOM) / 2 };
     createSprites(this);
-    const { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor, chiefs } = this.buildLevel(testLevel);
+    const { map, layer, view, start, goal, guards, eggs, pickups, blockContents, suitcase, bossAt, vipDoor, chiefs } = this.buildLevel(gameplay.rows);
     const worldW = map.widthInPixels;
     const worldH = map.heightInPixels;
 
-    this.updateBackground = createBackground(this, worldW, worldH);
+    this.updateBackground = createBackground(this, worldW, worldH, world.background);
     this.add.existing(layer);
     this.add.existing(view);
     this.layer = layer;
@@ -232,12 +236,12 @@ export default class GameScene extends Phaser.Scene {
     this.add.image(ux + left, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
     this.ammoText = text(left + 7, 18, '');
     text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
-    text(GAME_WIDTH / 2, 15, 'TULUM WORLD 1-1', 0.5);
+    text(GAME_WIDTH / 2, 15, `${this.world.name} WORLD ${this.level}-1`, 0.5);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeText = text(GAME_WIDTH - 6, 15, '', 1);
 
     // Mario-style clock: when it runs out, the life is lost.
-    this.timeLeft = LEVEL_TIME;
+    this.timeLeft = this.gameplay.time;
     this.time.addEvent({
       delay: 1000,
       loop: true,
@@ -353,10 +357,12 @@ export default class GameScene extends Phaser.Scene {
       cam.setBounds(arena.left, 0, GAME_WIDTH, this.worldH);
       cam.startFollow(player, true, 0.2, 0.2);
     });
-    const title = this.banner('SOLOMUN!');
+    const { id, ...tuning } = this.gameplay.boss;
+    const bossInfo = BOSSES[id];
+    const title = this.banner(`${bossInfo.name}!`);
     this.time.delayedCall(1600, () => title.destroy());
 
-    const boss = (this.boss = new Boss(this, arena));
+    const boss = (this.boss = bossInfo.create(this, arena, tuning));
     this.physics.add.overlap(player, boss, () => {
       if (player.dead || boss.mode === 'defeated') return;
       const stomp = player.body.velocity.y > 0 && player.body.bottom < boss.body.top + 10;
@@ -376,8 +382,8 @@ export default class GameScene extends Phaser.Scene {
     // His hit points under the clock, like a boss bar.
     const { x: ux, y: uy } = this.ui;
     const right = ux + GAME_WIDTH - 6;
-    this.bossHud = [this.add.image(right - 38, uy + 31, 'solomun-portrait').setScale(0.5).setOrigin(1, 0.5)];
-    for (let i = 0; i < BOSS.hits; i++) {
+    this.bossHud = [this.add.image(right - 38, uy + 31, bossInfo.portrait).setScale(0.5).setOrigin(1, 0.5)];
+    for (let i = 0; i < boss.hitsLeft; i++) {
       this.bossHud.push(this.add.image(right - 30 + i * 10, uy + 31, 'heart').setScale(ITEM_SCALE));
     }
     this.bossHud.forEach((o) => o.setScrollFactor(0).setDepth(10));
