@@ -27,6 +27,9 @@ jobs:
       - run: npm ci
       - run: npm run check-levels
       - run: npm run build
+        env:
+          # every level is open to play, in any order (Sandro, 2026-11-18); remove to lock them again
+          VITE_UNLOCK_ALL: '1'
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
