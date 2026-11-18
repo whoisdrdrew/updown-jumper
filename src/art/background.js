@@ -12,7 +12,7 @@ import tulumCrowd3 from './world/solomun/crowd-3.png';
 
 // Each world has a backdrop themed on its DJ boss, in layers that scroll at different speeds.
 //   club:    sunset sky, the venue with its stage screen, moving light beams, the crowd and palms.
-//   solomun: the wooden beach hut of his Tulum set, wicker lamps and a dancing crowd.
+//   tulum:   the wooden beach hut of his Tulum set, wicker lamps and a dancing crowd.
 // Pits are plain black gaps in every world, like Mario 3.
 
 // The layers are drawn by tools/world_art.py and tools/world_solomun.py at the hero's pixel size
@@ -37,7 +37,8 @@ export function preloadBackground(scene) {
   TULUM_CROWD.forEach((image, i) => scene.load.image(`tulum-crowd-${i}`, image));
 }
 
-export function createBackground(scene, worldW, worldH, theme = 'solomun') {
+// theme: the world's `background` key (src/levels/worlds/): 'tulum' or 'club'.
+export function createBackground(scene, worldW, worldH, theme = 'tulum') {
   // Fixed layers sit at the camera's zoom offset, so they fill the zoomed view.
   const cam = scene.cameras.main;
   const ox = (cam.width - cam.width / cam.zoom) / 2;

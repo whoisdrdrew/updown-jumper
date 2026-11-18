@@ -8,6 +8,8 @@ import MenuMusic from '../audio/MenuMusic.js';
 import BossBeat from '../audio/BossBeat.js';
 import { DJ_ROSTER, LINEUP_SIZE, djById, unlockedCount, playlist } from '../djs.js';
 import { BOOKINGS, STAGES, daysLeft } from '../hub.js';
+import { LEVELS, BUILT_LEVELS } from '../levels/index.js';
+import { BOSSES as BOSS_LIST } from '../bosses/index.js';
 import { pixText, pixWidth } from '../ui/pixelFont.js';
 import {
   preloadHome, cardKey, LEVEL_COUNT, CARD_WINDOW, HINT_AREA, SECTIONS, WINDOW,
@@ -22,10 +24,10 @@ const INK = 0x221533;
 const GILT = [0x7a4a14, 0xb8863a, 0xe0b45c, 0xf5d890];
 const YELLOW = 0xf7ce12;
 const OUTLINE = 0x150b22;
-// The levels that exist so far; the others can be unlocked but say "coming soon".
-const BUILT = new Set([1]);
+// The levels that exist so far (src/levels/); the others can be unlocked but say "coming soon".
+const BUILT = BUILT_LEVELS;
 // The bosses' names, shown once their level can be played.
-const BOSSES = { 1: 'SOLOMUN' };
+const BOSSES = Object.fromEntries(LEVELS.map((l) => [l.level, BOSS_LIST[l.boss.id].name]));
 // For now the Afterparty opens even while the ticket is still locked (it keeps its padlock look),
 // so it can be seen before 10 levels exist. Set to false to make the 10 nuggets required.
 const AFTERPARTY_OPEN_EARLY = true;

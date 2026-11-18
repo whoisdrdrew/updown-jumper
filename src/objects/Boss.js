@@ -9,8 +9,10 @@ const CLOUD_BELOW = (22 - CLOUD_OVERLAP) * SCALE; // how far the cloud reaches b
 // towel as a warning, then dives at the player and glides low over the floor before rising again.
 // Jump on his head or hit him with a rubber duck. Touching him any other way costs a hit.
 // Events: 'hit' (hitsLeft), 'defeated'.
+// tuning comes from the level's gameplay file (src/levels/gameplay/): hits to beat him and how fast he
+// starts (1 = the numbers in config.js BOSS), so a later level can bring a tougher boss.
 export default class Boss extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, arena) {
+  constructor(scene, arena, tuning = {}) {
     super(scene, arena.centerX, arena.top - 40, 'solomun-meditate');
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -35,8 +37,8 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     });
 
     this.arena = arena;
-    this.hitsLeft = BOSS.hits;
-    this.speedFactor = 1;
+    this.hitsLeft = tuning.hits ?? BOSS.hits;
+    this.speedFactor = tuning.speed ?? 1;
     this.mode = 'enter';
     this.modeAt = scene.time.now;
     this.safeUntil = 0;
