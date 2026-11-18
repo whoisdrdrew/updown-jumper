@@ -38,7 +38,7 @@ export default class CarlCox extends DjBoss {
     });
     // The starting-light tower at the back of the arena, and the big light that counts him in.
     this.tower = scene.add.image(arena.left + 24, arena.floor, `${this.id}-roadster-lights`).setScale(0.5).setOrigin(0.5, 1).setDepth(2);
-    this.lamp = scene.add.circle(arena.centerX, arena.floor - 120, 6, 0x30233f).setStrokeStyle(1, 0x150b22).setDepth(9).setVisible(false);
+    this.lamp = scene.add.circle(arena.centerX, arena.floor - 78, 6, 0x30233f).setStrokeStyle(1, 0x150b22).setDepth(9).setVisible(false);
     this.on('destroy', () => [this.car, this.tower, this.lamp].forEach((o) => o.destroy()));
   }
 
@@ -104,7 +104,7 @@ export default class CarlCox extends DjBoss {
   update(time) {
     super.update(time);
     if (this.carOn && this.mode !== 'defeated') {
-      this.y = this.arena.floor - 14 - this.displayHeight / 2;
+      this.y = this.arena.floor - 7 - this.displayHeight / 2; // sunk into the seat: the doors hide his legs
       this.setAngle(0);
       this.car.setPosition(this.x, this.arena.floor);
     }
