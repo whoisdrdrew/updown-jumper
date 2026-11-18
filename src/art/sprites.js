@@ -52,6 +52,7 @@ import solomunCloudBack1 from './solomun/cloud-back-1.png';
 import solomunCloudFront0 from './solomun/cloud-front-0.png';
 import solomunCloudFront1 from './solomun/cloud-front-1.png';
 import airPuff from './world/air-puff.png';
+import { preloadDjArt } from './djArt.js';
 
 // Other DJs' walking pictures (art/<dj>/playable/): the same poses and sizes as Boris's, so they move
 // the same. hero/ is drawn for both his masked and bare looks (only Boris wears the mask), hero-big/ for
@@ -134,6 +135,8 @@ export function preloadSprites(scene) {
   scene.load.image('solomun-cloud-front-0', solomunCloudFront0);
   scene.load.image('solomun-cloud-front-1', solomunCloudFront1);
   // Air the ride duck squeezes out (player/DuckPuffs.js): three frames of a growing puff.
+  // The DJ bosses of levels 2+ (src/art/djArt.js).
+  preloadDjArt(scene);
   scene.load.spritesheet('air-puff', airPuff, { frameWidth: 16, frameHeight: 14 });
 }
 

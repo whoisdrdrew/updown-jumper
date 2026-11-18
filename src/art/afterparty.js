@@ -13,6 +13,8 @@ import nuggetIcon from './afterparty/nugget-icon.png';
 import nuggetSlot from './afterparty/nugget-slot.png';
 import ticket from './afterparty/ticket.png';
 import ticketLocked from './afterparty/ticket-locked.png';
+import { BOSSES_BY_LEVEL } from '../bosses/index.js';
+import { preloadDjArt } from './djArt.js';
 
 export const NUGGET_COUNT = 10; // one per level
 export const ROOM_FLOOR = 300;
@@ -25,12 +27,12 @@ export const DJ_SPOTS = [
   { x: 40, y: 300 }, { x: 98, y: 300 }, { x: 156, y: 300 }, { x: 484, y: 300 }, { x: 542, y: 300 },
   { x: 600, y: 300 }, { x: 110, y: 348 }, { x: 250, y: 348 }, { x: 390, y: 348 }, { x: 530, y: 348 },
 ];
-// The DJs are the end bosses of the 10 levels, in level order; the ones not drawn yet are null.
-// beat: the song he plays at the booth (his boss beat).
-export const DJS = [
-  { name: 'SOLOMUN', texture: 'solomun-photo-pose', beat: 'solomun' },
-  null, null, null, null, null, null, null, null, null,
-];
+// The DJs are the end bosses of the 10 levels, in level order (src/bosses/); the ones not drawn yet
+// are null. beat: the boss id whose song he plays at the booth (his boss beat).
+export const DJS = DJ_SPOTS.map((_spot, i) => {
+  const boss = BOSSES_BY_LEVEL.find((b) => b.level === i + 1);
+  return boss ? { name: boss.name, texture: `${boss.id}-photo-pose`, beat: boss.id } : null;
+});
 
 export function preloadNuggets(scene) {
   scene.load.image('nugget', nugget);
@@ -47,4 +49,5 @@ export function preloadAfterparty(scene) {
   scene.load.image('afterparty-booth', booth);
   scene.load.image('afterparty-glow-0', boothGlow0);
   scene.load.image('afterparty-glow-1', boothGlow1);
+  preloadDjArt(scene);
 }

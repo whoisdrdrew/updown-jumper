@@ -11,6 +11,8 @@ import { preloadVipFx } from '../art/vipFx.js';
 import VipFx from '../objects/VipFx.js';
 import { hasNugget, markNugget, chosenDj } from '../progress.js';
 import { djById } from '../djs.js';
+import { levelData } from '../levels/index.js';
+import { BOSSES } from '../bosses/index.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -52,6 +54,8 @@ export default class BonusScene extends Phaser.Scene {
     this.state = data.played ? 'done' : 'ready';
     this.collected = 0;
     this.level = data.level ?? 1;
+    // The level's boss: his beat on the music button, his portrait under the ducks.
+    this.bossId = levelData(this.level)?.gameplay.boss.id ?? 'solomun';
 
     this.add.tileSprite(0, 0, WORLD_W / BONUS_SCALE, 180 / BONUS_SCALE, 'bonus-lounge').setOrigin(0).setScale(BONUS_SCALE);
     // The party: moving lights (behind everything) and the CO2 cannons in the big room.
@@ -76,7 +80,7 @@ export default class BonusScene extends Phaser.Scene {
     this.physics.add.collider(this.player, [this.musicButton, this.timerButton], (_p, button) => this.landOn(button));
     this.physics.add.overlap(this.player, this.ducks, (_p, duck) => this.collect(duck));
 
-    this.beat = new BossBeat(this.sound.context);
+    this.beat = new BossBeat(this.sound.context, BOSSES[this.bossId]?.song);
     this.events.once('shutdown', () => this.beat.stop());
     this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
 
@@ -167,7 +171,7 @@ export default class BonusScene extends Phaser.Scene {
   addPortrait() {
     const { cols, rows, cell, left, top } = PORTRAIT;
     const inset = PORTRAIT_INSET * BONUS_SCALE;
-    this.add.image(left, top, 'bonus-portrait').setOrigin(0).setScale(BONUS_SCALE);
+    this.add.image(left, top, `bonus-portrait-${this.bossId}`).setOrigin(0).setScale(BONUS_SCALE);
     this.add.image(left - inset, top - inset, 'bonus-portrait-frame').setOrigin(0).setScale(BONUS_SCALE);
     this.cells = [];
     this.ducks = this.physics.add.staticGroup();
