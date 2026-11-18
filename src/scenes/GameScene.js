@@ -236,7 +236,9 @@ export default class GameScene extends Phaser.Scene {
     this.add.image(ux + left, uy + 22, 'rubber-duck').setScale(DUCK_SCALE).setScrollFactor(0).setDepth(10);
     this.ammoText = text(left + 7, 18, '');
     text(GAME_WIDTH / 2, 5, 'UP DOWN JUMPER', 0.5).setColor('#ffe680');
-    text(GAME_WIDTH / 2, 15, `${this.world.name} WORLD ${this.level}-1`, 0.5);
+    // A long world name drops the word WORLD so it doesn't run into the duck counter.
+    const worldName = this.world.name.length > 10 ? this.world.name : `${this.world.name} WORLD`;
+    text(GAME_WIDTH / 2, 15, `${worldName} ${this.level}-1`, 0.5);
     text(GAME_WIDTH - 6, 5, 'TIME', 1);
     this.timeText = text(GAME_WIDTH - 6, 15, '', 1);
 
