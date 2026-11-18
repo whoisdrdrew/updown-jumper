@@ -6,19 +6,22 @@ other worlds). sky is opaque and does not scroll. far, mid and near keep their t
 optional placement moves the drawn part: scale (1 = as drawn), bottom (where its lowest pixel
 sits, as a share of the height: 0.5 = halfway down) and x (where its centre sits, as a share of
 the width). dim=<layer>:<factor> darkens a layer (0.75 = 75% bright) so the players stand
-out against it. The layers tile sideways, so nothing should touch the left or right edge unless it
+out against it. seam=<layer>:mirror keeps the left half of a layer and adds it mirrored, for a band that
+runs the whole width but doesn't tile by itself. The layers tile sideways, so nothing should touch the left or right edge unless it
 runs the whole width (a crowd). Everything below about y=265 is behind the ground tiles."""
 import sys, os
 from PIL import Image
 
 W, H = 640, 360
 SRC, ART = sys.argv[1], sys.argv[2]
-place, dim = {}, {}
+place, dim, seam = {}, {}, {}
 for arg in sys.argv[3:]:
     name, vals = arg.split('=')
     if name == 'dim':
         layer_name, f = vals.split(':')
         dim[layer_name] = float(f)
+    elif name == 'seam':
+        seam[vals.split(':')[0]] = True
     else:
         place[name] = [float(v) for v in vals.split(',')]
 
@@ -29,6 +32,12 @@ for i, name in enumerate(['sky', 'far', 'mid', 'near']):
     im = Image.open(os.path.join(SRC, f'{name}.png')).convert('RGBA')
     k = W / im.width
     im = im.resize((W, round(im.height * k)), Image.BOX)
+    if name in seam:
+        # keep the first half and add it again mirrored: both joins then match exactly
+        half = im.crop((0, 0, W // 2, im.height))
+        im = Image.new('RGBA', (W, im.height))
+        im.paste(half, (0, 0))
+        im.paste(half.transpose(Image.FLIP_LEFT_RIGHT), (W // 2, 0))
     layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     if name == 'sky':
         layer.paste(im.crop((0, 0, W, min(H, im.height))), (0, 0))
