@@ -1,7 +1,8 @@
 // WORLD: SNAPPER, fisher's world: Snapper Rocks on the Gold Coast: the rock shelf, breaking waves, the patrol tower, dolphins and the skyline across the bay (levels-input/fisher/world 02-06).
 // Looks only. Gameplay files (src/levels/gameplay/) name this world but never change it.
-// Art: tools/world_djs.py draws the four layers into src/art/world/snapper/ (a first pass, made to be
-// redrawn); the 'layers' builder in src/art/background.js puts them together.
+// Art: made in Higgsfield (pictures in project files art/worlds/snapper/), shrunk into
+// src/art/world/snapper/ with `python3 tools/hf_world.py <dir> snapper far=0.9,0.415,0.5 mid=1,0.7,0.5
+// near=0.8,0.775,0.5 seam=mid:edge dim=near:0.9`; the 'layers' builder in src/art/background.js puts them together.
 export default {
   id: 'snapper',
   name: 'SNAPPER', // top bar
@@ -13,10 +14,10 @@ export default {
   tiles: 'tiles', // tileset (src/art/world/tiles.png, shared for now)
   pit: 'black',
   layers: [
-    'sky: afternoon sky over the sea (fixed)',
-    'far: the Gold Coast skyline across the bay (0.05)',
-    'mid: breaking wave, dolphins, the patrol tower on the beach (0.15)',
-    'near: the dark wet rock shelf (0.35)',
+    'sky: bright midday sky and the open turquoise sea (fixed; its own palette, no dusk)',
+    'far: the Gold Coast skyline and a green headland on the horizon (0.05)',
+    'mid: a big breaking turquoise wave with two dolphins and tiny surfers (0.15)',
+    'near: the yellow patrol tower with a palm and surfboards on sand, and the dark rock shelf (0.35)',
   ],
   motifs: ['rock shelf: uneven low steps', 'wide water gaps (pits)', 'the fishing rod (boss)'],
 };

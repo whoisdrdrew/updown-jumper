@@ -1,7 +1,8 @@
 // WORLD: MELLOW, marshmello's world: a white marshmallow world: wooden sticks, campfires, a soft white land under a moonlit sky (Sandro's notes; no world pictures).
 // Looks only. Gameplay files (src/levels/gameplay/) name this world but never change it.
-// Art: tools/world_djs.py draws the four layers into src/art/world/mellow/ (a first pass, made to be
-// redrawn); the 'layers' builder in src/art/background.js puts them together.
+// Art: made in Higgsfield (pictures in project files art/worlds/mellow/), shrunk into
+// src/art/world/mellow/ with `python3 tools/hf_world.py <dir> mellow far=1,0.66,0.5 mid=0.5,0.66,0.5 repeat=mid:2
+// seam=far:mirror seam=near:mirror`; the 'layers' builder in src/art/background.js puts them together.
 export default {
   id: 'mellow',
   name: 'MELLOW', // top bar
@@ -14,9 +15,9 @@ export default {
   pit: 'black',
   layers: [
     'sky: lilac night sky with stars and a crescent moon (fixed)',
-    'far: hills of giant marshmallows (0.05)',
-    'mid: marshmallows on long wooden sticks, toasted on one side (0.15)',
-    'near: campfires with logs and stones (0.35)',
+    'far: hills of giant marshmallows and fluffy white ground (0.05)',
+    'mid: campfires with people sitting around them roasting marshmallows, sticks between (0.15)',
+    'near: soft marshmallow ground with a few loose marshmallows; no crowd here (Sandro) (0.35)',
     'effect: embers drifting up from the fires',
   ],
   motifs: ['marshmallows as soft round platforms', 'wooden sticks as thin poles', 'fire (boss: burning marshmallows)'],
