@@ -1,7 +1,8 @@
 // WORLD: IBIZA, miss-monique's world: Ibiza at sunset, for Miss Monique's famous Ibiza set (no world pictures in Drive, so taken from her set screenshots and the existing IBIZA club look).
 // Looks only. Gameplay files (src/levels/gameplay/) name this world but never change it.
-// Art: tools/world_djs.py draws the four layers into src/art/world/ibiza/ (a first pass, made to be
-// redrawn); the 'layers' builder in src/art/background.js puts them together.
+// Art: made in Higgsfield (pictures in project files art/worlds/ibiza/), shrunk into
+// src/art/world/ibiza/ with `python3 tools/hf_world.py <dir> ibiza far=0.55,0.415,0.15 mid=0.7,0.5,0.73 dim=near:0.7`;
+// the 'layers' builder in src/art/background.js puts them together.
 export default {
   id: 'ibiza',
   name: 'IBIZA', // top bar
@@ -14,8 +15,8 @@ export default {
   pit: 'black',
   layers: [
     'sky: sunset over the sea, the low sun and its glitter on the water (fixed)',
-    'far: Es Vedra, the rock island off Ibiza (0.05)',
-    'mid: the white town on the hill, lit pink by the sunset (0.15)',
+    'far: Es Vedra, the rock island off Ibiza, on the left (0.05)',
+    'mid: Dalt Vila, the old town and cathedral on its hill, lit pink by the sunset (0.15)',
     'near: palm trees and the crowd with hands up (0.35)',
     'effect: coloured light beams sweeping from the stage',
   ],
