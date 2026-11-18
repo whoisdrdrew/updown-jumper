@@ -70,6 +70,8 @@ export default class HomeScene extends Phaser.Scene {
     const done = levelsDone();
     this.done = done;
     this.reachable = Math.min(done + 1, LEVEL_COUNT); // finished levels and the next one can be played
+    // Review builds (VITE_UNLOCK_ALL=1 npm run build) open every level, for trying them in any order.
+    if (import.meta.env.VITE_UNLOCK_ALL) this.reachable = LEVEL_COUNT;
     this.dj = djById(chosenDj());
     this.makeSilhouette('lineup-solomun', 'lineup-unknown');
 
