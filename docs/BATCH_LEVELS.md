@@ -134,9 +134,15 @@ Write `src/levels/gameplay/<nn>-<id>.js` like `01-solomun.js`, add it to `LEVELS
   6. Rest: about 10 tiles with a few ducks before the arena.
   7. Arena: 20 tiles of flat solid ground (one screen) with `K` in the middle, 2 rows above the floor,
      nothing else in it. Flag `F` a few tiles after the arena, on solid ground.
-- **Always reachable**: a standing jump rises about 2.5 tiles and a running jump about 3.5, so no
-  platform more than 3 tiles above the one before it (2 if you can't take a run-up); pits no wider
-  than the curve allows (5 max); a thin platform `=` or ground under every landing.
+- **Always reachable**: a standing jump lifts the feet about 2.75 tiles (44 px) and a running jump
+  about 3.5 (57 px). A block top 4 rows above the ground (a floating brick row in row 5 over ground
+  in row 9) can't be stood on; put floating rows in row 6, like level 1. Pits no wider than the
+  curve allows (5 max). `npm run check-levels` plays every jump with the game's own physics
+  (`src/levels/reach.js`) and fails on anything the player can't get to: the suitcase, VIP door,
+  boss and flag (running allowed, with a 5% weaker jump so nothing needs a perfect press), every
+  block or platform top and every music-note block (at walking pace: a run-up is only ever needed
+  to cross pits, never to climb), and every rubber duck. Columns and rows in its messages count
+  from 0. A thin platform `=` or ground under every landing.
 - **Use the world, don't change it**: build the platform shapes from the world's `motifs`.
 - **Items**: exactly one `H` (burger) in levels 2-5, at most one later, early in the level.
   One `Y` (duck egg) from level 3 on, before a hard stretch. Ducks `o` mostly in arcs that show the
