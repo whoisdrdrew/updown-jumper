@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 const SCALE = 0.5; // drawn at twice the world resolution, like the hero
+const STEP_MS = 140; // one step of his walk, like Boris walking
 
 // The common end boss for the DJ levels 2+. Each DJ (src/bosses/dj/<id>.js) extends this and only
 // writes its own attack; the cycle is the same for all of them, so a fight is easy to read:
@@ -10,7 +11,7 @@ const SCALE = 0.5; // drawn at twice the world resolution, like the hero
 // him faster. Same interface as Solomun (src/objects/Boss.js): takeHit(), hurtable, mode,
 // standForPhoto(x, floor, flip), events 'hit' (hitsLeft) and 'defeated'.
 //
-// Pictures: '<id>-idle', '<id>-attack', '<id>-defeat', '<id>-photo-pose' (src/art/<id>/).
+// Pictures: '<id>-idle', '<id>-walk', '<id>-attack', '<id>-defeat', '<id>-photo-pose' (src/art/<id>/).
 // Numbers: the defaults below; a DJ overrides them with its own static TUNING.
 export const DEFAULTS = {
   walkSpeed: 55, // px/s at speed 1
@@ -96,6 +97,12 @@ export default class DjBoss extends Phaser.Physics.Arcade.Sprite {
     if (this.mode !== 'enter' && !this.airborne) this.y = this.floorY;
   }
 
+  // Walking: his walking picture and his idle picture take turns, the same two-step cycle as Boris.
+  step(time) {
+    const pose = Math.floor(time / STEP_MS) % 2 ? 'walk' : 'idle';
+    if (this.texture.key !== `${this.id}-${pose}`) this.setPose(pose);
+  }
+
   setMode(mode) {
     this.mode = mode;
     this.modeAt = this.scene.time.now;
@@ -131,6 +138,7 @@ export default class DjBoss extends Phaser.Physics.Arcade.Sprite {
         if (this.x >= right) this.dir = -1;
         this.body.setVelocityX(this.dir * n.walkSpeed * this.speedFactor);
         this.setFlipX(this.dir < 0);
+        this.step(time);
         if (t > this.ms(n.walkMs)) {
           this.body.setVelocityX(0);
           this.facePlayer();
@@ -245,15 +253,21 @@ export default class DjBoss extends Phaser.Physics.Arcade.Sprite {
 
   // Beaten, he walks over next to Boris for Felix's winner photo.
   standForPhoto(x, floor, flip) {
-    this.setTexture(`${this.id}-photo-pose`).setFlipX(flip).setAngle(0);
+    this.setFlipX(x < this.x).setAngle(0);
     return new Promise((resolve) => {
       this.scene.tweens.add({
         targets: this,
         x,
-        y: floor - this.displayHeight / 2,
         duration: 650,
         ease: 'Quad.easeInOut',
+        onUpdate: () => {
+          const pose = Math.floor(this.scene.time.now / STEP_MS) % 2 ? 'walk' : 'idle';
+          this.setTexture(`${this.id}-${pose}`);
+          this.y = floor - this.displayHeight / 2;
+        },
         onComplete: () => {
+          this.setTexture(`${this.id}-photo-pose`).setFlipX(flip);
+          this.y = floor - this.displayHeight / 2;
           this.scene.tweens.add({ targets: this, y: this.y - 3, duration: 90, yoyo: true, onComplete: resolve });
         },
       });

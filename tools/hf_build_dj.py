@@ -1,4 +1,5 @@
 """Build one DJ's game pictures from cleaned Higgsfield concepts.
+The boss walking picture (walk.png) is made after, by tools/hf_boss_walk.py.
 python3 build_dj.py <concept dir with idle,run,jump,sit,attack,defeat,photo,portrait .png> <repo> <id>"""
 import sys, os, numpy as np
 from PIL import Image
