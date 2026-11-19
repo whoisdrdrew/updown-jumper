@@ -77,6 +77,14 @@ export default class Securities {
     });
   }
 
+  // The boss fight is one on one: every bouncer still in the level steps out (fades away).
+  clearAll() {
+    this.group.children.each((guard) => {
+      guard.body.enable = false;
+      this.scene.tweens.add({ targets: guard, alpha: 0, duration: 300, onComplete: () => guard.destroy() });
+    });
+  }
+
   // Hit by a rubber duck: knocked off his feet and out of the level, like a beaten enemy in Mario.
   knockAway(guard, dir) {
     guard.body.enable = false;

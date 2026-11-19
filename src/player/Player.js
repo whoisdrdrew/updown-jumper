@@ -8,7 +8,9 @@ const SIZE = {
   foot: { w: PLAYER.width, h: PLAYER.height },
   riding: { w: 20, h: 28 },
   bigFoot: { w: PLAYER.width + 1, h: PLAYER.bigHeight },
-  bigRiding: { w: 20, h: 28 + PLAYER.bigHeight - PLAYER.height },
+  // Big Boris sits lower in the duck, so riding big still fits under a row of bricks two tiles
+  // above the floor (32 px).
+  bigRiding: { w: 20, h: 30 },
 };
 
 // The Up-Down-Jumper, drawn from Sandro's pose sheets, with and without the mask.
@@ -56,7 +58,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   get invulnerable() {
-    return this.dead || this.scene.time.now < this.safeUntil;
+    // Nothing can hurt him during a cutscene, like the winner photo.
+    return this.dead || this.scene.cutscene || this.scene.time.now < this.safeUntil;
   }
 
   update(time, delta) {

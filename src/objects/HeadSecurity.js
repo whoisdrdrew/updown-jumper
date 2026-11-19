@@ -145,6 +145,16 @@ export default class HeadSecurity {
     this.setState(chief, 'skid', HS.skidMs);
   }
 
+  // The boss fight is one on one: every head of security still in the level steps out (fades away).
+  clearAll() {
+    this.group.children.each((chief) => {
+      chief.body.enable = false;
+      chief.exclaim?.destroy();
+      chief.exclaim = null;
+      this.scene.tweens.add({ targets: chief, alpha: 0, duration: 300, onComplete: () => chief.destroy() });
+    });
+  }
+
   // Coming down on his head from above (rather than walking into him).
   isStomp(player, chief) {
     return player.body.velocity.y > 0 && player.body.bottom < chief.body.top + 8;

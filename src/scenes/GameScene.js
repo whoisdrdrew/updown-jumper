@@ -352,6 +352,9 @@ export default class GameScene extends Phaser.Scene {
   startBossFight() {
     const { arena, player } = this;
     const cam = this.cameras.main;
+    // One on one: no bouncers or heads of security during the fight or the winner photo.
+    this.securities.clearAll();
+    this.headSecurity.clearAll();
     this.physics.world.setBounds(arena.left, 0, GAME_WIDTH, this.worldH, true, true, false, false);
     cam.stopFollow();
     cam.pan(arena.centerX, cam.midPoint.y, 500, 'Sine.easeInOut', false, (_c, done) => {

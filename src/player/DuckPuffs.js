@@ -31,11 +31,12 @@ export default class DuckPuffs {
   update(time, player, onGround) {
     const speed = Math.abs(player.body.velocity.x);
     const moving = onGround && speed > 10;
-    // Waddle: a little tilt back and forth, faster when running. Angle doesn't move the hitbox.
-    const stepMs = speed > 120 ? 70 : 110;
-    player.setAngle(moving ? (Math.floor(time / stepMs) % 2 ? 4 : -4) : 0);
+    // Waddle: a slow, small rock back and forth, a bit quicker when running. (It used to tilt 4
+    // degrees every 70 ms, which looked like shaking.) Angle doesn't move the hitbox.
+    const stepMs = speed > 120 ? 160 : 220;
+    player.setAngle(moving ? (Math.floor(time / stepMs) % 2 ? 1.5 : -1.5) : 0);
     if (!moving || time < this.nextPuffAt) return;
-    this.nextPuffAt = time + stepMs;
+    this.nextPuffAt = time + (speed > 120 ? 70 : 110);
     const back = -player.facing;
     this.puff(player.x + back * 10, player.body.bottom - 2, back * (10 + Math.random() * 6), -4 - Math.random() * 4);
   }
