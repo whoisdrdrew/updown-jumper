@@ -1,9 +1,12 @@
-// Checks every level against the difficulty curve (src/levels/difficulty.js) and the world /
-// gameplay split. Run: npm run check-levels. Exits with 1 if anything is wrong.
+// Checks every level against the difficulty curve (src/levels/difficulty.js), the world /
+// gameplay split, and that every jump can be made (src/levels/reach.js plays them all with the
+// game's own physics). Run: npm run check-levels. Exits with 1 if anything is wrong.
+// It takes about half a minute: the reach check tries every jump from every spot.
 import { LEVELS } from '../src/levels/index.js';
 import { WORLDS } from '../src/levels/worlds/index.js';
 import { BOSS_IDS } from '../src/bosses/ids.js';
 import { measure, problems, targets } from '../src/levels/difficulty.js';
+import { reach } from '../src/levels/reach.js';
 
 let bad = 0;
 const fail = (msg) => {
@@ -33,7 +36,25 @@ LEVELS.forEach((gp, i) => {
     if (count !== 1) fail(`needs exactly one '${ch}', has ${count}`);
   }
   for (const p of problems(n, gp, LEVELS[i - 1])) fail(p);
+  for (const p of reachProblems(gp)) fail(p);
 });
+
+// Sentences for everything the player can't get to. Columns and rows count from 0, like the rows.
+function reachProblems(gp) {
+  const r = reach(gp);
+  if (r.error) return [r.error];
+  const out = [];
+  if (!r.flag) out.push("the flag can't be reached");
+  if (!r.boss) out.push("the boss arena can't be reached");
+  if (!r.suitcase) out.push("the suitcase can't be reached");
+  if (!r.vip) out.push("the VIP door can't be reached");
+  for (const t of r.tops) {
+    out.push(`row ${t.y}, columns ${t.x}-${t.x2} ('${t.c}'): can't be stood on without a run-up (or at all)`);
+  }
+  for (const b of r.blocks) out.push(`row ${b.y}, column ${b.x} ('${b.c}'): this block can't be bumped from below`);
+  for (const d of r.ducks) out.push(`row ${d.y}, column ${d.x}: this rubber duck can't be collected`);
+  return out;
+}
 
 // Worlds are looks only: no level rows, enemies or boss tuning in them.
 for (const [id, world] of Object.entries(WORLDS)) {
