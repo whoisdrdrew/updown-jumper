@@ -147,19 +147,24 @@ export const DUCK_SCALE = 0.5;
 // Riding: the sitting pose on the duck's back, behind its masked head. Hero and duck pictures
 // share a resolution (two picture pixels per world pixel), so they're drawn 1:1.
 // 'hero-rider' (with mask) or 'bare-rider' (without), and 'big-hero-rider' / 'big-bare-rider'.
+// Where the sitting pose goes, from the duck picture's top left: small Boris sits down in the dip of
+// the duck's back with his legs over its side; big Boris (a taller, front-on sitting pose) a bit higher.
+const SEAT = { small: { x: -1, y: -10 }, big: { x: -2, y: -19 } };
+
 function makeRider(scene, look) {
   const key = `${look}-rider`;
   if (scene.textures.exists(key)) return;
   const hero = scene.textures.get(`${look}-sit`).getSourceImage();
   const duck = scene.textures.get('big-duck').getSourceImage();
-  // The seat is where the normal sitting pose's bottom (50 px down) meets the duck's back; a taller
-  // big pose sits on the same spot, so the duck moves down by the extra height.
-  const duckY = 12 + hero.height - 50;
-  const tex = scene.textures.createCanvas(key, Math.max(55, hero.width), duckY + duck.height);
+  const seat = hero.height > 50 ? SEAT.big : SEAT.small;
+  const duckX = Math.max(0, -seat.x);
+  const duckY = Math.max(0, -seat.y);
+  const width = Math.max(duckX + duck.width, duckX + seat.x + hero.width);
+  const tex = scene.textures.createCanvas(key, width, duckY + duck.height);
   const ctx = tex.getContext();
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(duck, 8, duckY);
-  ctx.drawImage(hero, 0, 0); // seat on the back, face and crown of the duck still showing
+  ctx.drawImage(duck, duckX, duckY);
+  ctx.drawImage(hero, duckX + seat.x, duckY + seat.y); // seat on the back, face and crown of the duck still showing
   tex.refresh();
 }
 
