@@ -5,7 +5,7 @@
 // together in src/art/background.js under the `background` key.
 export default {
   id: 'tulum',
-  name: 'TULUM', // top bar: "TULUM WORLD 1-1"
+  name: 'SOLO ROOM', // top bar: "SOLO ROOM WORLD 1-1", after Solomun's Boiler Room set in Tulum
   dj: 'solomun', // whose world it is (the level's boss)
   background: 'tulum', // builder in src/art/background.js
   tiles: 'tiles', // tileset (src/art/world/tiles.png, shared for now)
