@@ -197,7 +197,9 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // What comes out of a music-note block: a rubber duck (collected right away), the duck egg or
-    // the burger box.
+    // the burger box. Scene events outlive a restart (after dying), so the old listener goes first:
+    // otherwise each death added one more and a block let out two burgers, two eggs or two ducks.
+    this.events.off('block-item');
     this.events.on('block-item', (item, x, y) => {
       if (item === 'egg') return this.rideDucks.popEgg(x, y);
       if (item === 'burger') return this.burgers.popBox(x, y, player.facing);

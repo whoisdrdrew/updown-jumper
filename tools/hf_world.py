@@ -10,13 +10,17 @@ out against it. repeat=<layer>:<n> places a
 placed part n times evenly across the width (x is then ignored). seam=<layer>:mirror keeps the left half of a layer and adds it mirrored, for a band that
 runs the whole width but doesn't tile by itself. seam=<layer>:edge keeps the middle as drawn and only
 replaces the right 30% with the left 30% mirrored, softly joined (for a band with one feature in the middle). The layers tile sideways, so nothing should touch the left or right edge unless it
-runs the whole width (a crowd). Everything below about y=265 is behind the ground tiles."""
+runs the whole width (a crowd). Everything below about y=265 is behind the ground tiles, but only
+while the camera is at its lowest: up on a high platform the ground sits lower, at about y=288.
+drop=<layer>:<px>:<cut> moves a layer down px pixels and, from row cut (as drawn, before the move)
+down, repeats the row just above it: for a crowd that stops above the ground with a dark floor
+under it, so it reaches down behind the ground tiles with no gap."""
 import sys, os
 from PIL import Image
 
 W, H = 640, 360
 SRC, ART = sys.argv[1], sys.argv[2]
-place, dim, seam, rep = {}, {}, {}, {}
+place, dim, seam, rep, drop = {}, {}, {}, {}, {}
 for arg in sys.argv[3:]:
     name, vals = arg.split('=')
     if name == 'dim':
@@ -25,6 +29,9 @@ for arg in sys.argv[3:]:
     elif name == 'repeat':
         layer_name, n = vals.split(':')
         rep[layer_name] = int(n)
+    elif name == 'drop':
+        layer_name, px, cut = vals.split(':')
+        drop[layer_name] = (int(px), int(cut))
     elif name == 'seam':
         layer_name, kind = (vals.split(':') + ['mirror'])[:2]
         seam[layer_name] = kind
@@ -77,6 +84,14 @@ for i, name in enumerate(['sky', 'far', 'mid', 'near']):
                 layer.alpha_composite(part, (round(x - part.width / 2), round(bottom * H - part.height)))
         else:
             layer.alpha_composite(im.crop((0, 0, W, min(H, im.height))), (0, 0))
+    if name in drop:
+        px, cut = drop[name]
+        edge = layer.crop((0, cut - 1, W, cut))
+        for y in range(cut, H):
+            layer.paste(edge, (0, y))
+        moved = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        moved.paste(layer.crop((0, 0, W, H - px)), (0, px))
+        layer = moved
     if name in dim:
         r, g, b, a = layer.split()
         r, g, b = (c.point(lambda v: round(v * dim[name])) for c in (r, g, b))

@@ -1,7 +1,7 @@
 // WORLD: IBIZA, miss-monique's world: Ibiza at sunset, for Miss Monique's famous Ibiza set (no world pictures in Drive, so taken from her set screenshots and the existing IBIZA club look).
 // Looks only. Gameplay files (src/levels/gameplay/) name this world but never change it.
 // Art: made in Higgsfield (pictures in project files art/worlds/ibiza/), shrunk into
-// src/art/world/ibiza/ with `python3 tools/hf_world.py <dir> ibiza far=0.55,0.415,0.15 mid=0.7,0.5,0.73 dim=near:0.7`;
+// src/art/world/ibiza/ with `python3 tools/hf_world.py <dir> ibiza far=0.55,0.415,0.15 mid=0.7,0.5,0.73 dim=near:0.7 drop=near:40:240`;
 // the 'layers' builder in src/art/background.js puts them together.
 export default {
   id: 'ibiza',
