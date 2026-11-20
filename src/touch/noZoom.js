@@ -25,9 +25,12 @@ export function preventZoom(getGame) {
   // Double-tap zoom: cancel the second of two quick taps. The game reads pointer events, which still
   // arrive, so no press is lost.
   let lastTouchEnd = 0;
+  // Never on the game picture: the game itself would then miss the finger lifting, think it is
+  // still down, and ignore every later tap (EXIT stopped working after a quick double jump). The
+  // game already blocks the zoom for touches on its picture.
   document.addEventListener('touchend', (e) => {
     const now = Date.now();
-    if (now - lastTouchEnd < DOUBLE_TAP_MS) block(e);
+    if (now - lastTouchEnd < DOUBLE_TAP_MS && e.target?.tagName !== 'CANVAS') block(e);
     lastTouchEnd = now;
   }, opts);
   document.addEventListener('dblclick', block, opts);
