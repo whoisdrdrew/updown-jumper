@@ -6,6 +6,7 @@ import GameScene from './scenes/GameScene.js';
 import BonusScene from './scenes/BonusScene.js';
 import AfterpartyScene from './scenes/AfterpartyScene.js';
 import { setupTouchControls, touch } from './touch/TouchControls.js';
+import { preventZoom } from './touch/noZoom.js';
 
 function startGame() {
   const game = new Phaser.Game({
@@ -31,6 +32,9 @@ function startGame() {
   window.__game = game;
   window.__touch = touch;
 }
+
+// Phones must never zoom in on the game (and if one ever does, it snaps back by itself).
+preventZoom(() => window.__game);
 
 // Phones get on-screen controls over the game; set up before the game starts so it is sized to
 // the whole screen.

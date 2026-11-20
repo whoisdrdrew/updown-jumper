@@ -16,8 +16,7 @@ export const PLAYER = {
   width: 10, // hitbox; the sprite is a little wider
   height: 20, // hitbox from sneakers to forehead; the spiky hair is drawn above it
 
-  walkSpeed: 90,
-  runSpeed: 150,
+  speed: 150, // the one movement speed: no separate walk and sprint, so he always moves the same
   groundAccel: 500, // speeding up on the ground
   groundDecel: 700, // slowing down when no direction is held
   skidDecel: 1100, // turning around while moving the other way

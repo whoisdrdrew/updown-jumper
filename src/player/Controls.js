@@ -33,7 +33,6 @@ export default class Controls {
   // The up arrow and the A button jump.
   jump() { return this.jumpKey.isDown || touch.jump; }
   jumpJustPressed() { return this.consume('jumpQueued') | consumeTouch('jumpQueued'); }
-  run() { return this.actionKey.isDown || touch.action || touch.run; }
   shootJustPressed() { return this.consume('shootQueued') | consumeTouch('shootQueued'); }
 
   consume(flag) {

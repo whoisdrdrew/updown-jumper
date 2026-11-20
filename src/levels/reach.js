@@ -152,7 +152,7 @@ const approach = (v, target, s) => (v < target ? Math.min(v + s, target) : Math.
 
 // The moves tried from every spot the player can stand on: a run-up speed, how long jump is held
 // (0 = walk off a ledge), and the steering in the air (first `a` for k frames, then `b`).
-const SPEEDS = [0, 45, PLAYER.walkSpeed, 120, PLAYER.runSpeed];
+const SPEEDS = [0, 45, 90, 120, PLAYER.speed];
 const HOLDS = [0, 1, 8, 99];
 const STEER = [];
 for (const b of [-1, 0, 1]) STEER.push({ a: b, k: 0, b });
@@ -163,14 +163,14 @@ for (const k of [10, 22]) {
 const SNAP = 6; // landing spots are rounded to this many pixels
 
 // The two players the check plays with:
-// RUN: holding run, with a jump 5% weaker than the real one, so no jump that's needed to finish
+// RUN: full speed, with a jump 5% weaker than the real one, so no jump that's needed to finish
 //   needs a pixel-perfect press. Must get from the start to the suitcase, VIP door, boss and flag,
 //   and every rubber duck (ducks over pits may need a run-up).
-// WALK: walking pace, never running. Starting from anywhere on the ground RUN got to (and every
+// WALK: never faster than 90 px/s (a short run-up, well under full speed). Starting from anywhere on the ground RUN got to (and every
 //   landing RUN made by jumping over a pit), it must be able to stand on every block and platform
 //   top and bump every music-note block. A run-up is only ever needed to cross pits, never to climb.
-export const RUN = { runSpeed: PLAYER.runSpeed, jumpScale: 0.95 };
-export const WALK = { runSpeed: PLAYER.walkSpeed, jumpScale: 1 };
+export const RUN = { runSpeed: PLAYER.speed, jumpScale: 0.95 };
+export const WALK = { runSpeed: 90, jumpScale: 1 };
 
 // Plays the whole level from the player start. Returns what can't be reached.
 // Plays the whole level from the player start. Returns what can't be reached.
