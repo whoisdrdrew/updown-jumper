@@ -20,6 +20,10 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
+    // Touch: only touches on the game picture itself count (the on-screen controls are separate
+    // elements and handle their own touches), and up to 3 at once, so EXIT still works while a
+    // thumb is on the cross or on A/B.
+    input: { windowEvents: false, activePointers: 3 },
     physics: {
       default: 'arcade',
       arcade: { gravity: { y: PHYSICS.gravity }, debug: false },
