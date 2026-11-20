@@ -75,7 +75,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Horizontal movement: accelerate toward the target speed instead of snapping to it.
     const dir = canSteer ? (c.right() ? 1 : 0) - (c.left() ? 1 : 0) : 0;
-    const maxSpeed = c.run() ? PLAYER.runSpeed : PLAYER.walkSpeed;
+    const maxSpeed = PLAYER.speed;
     let vx = body.velocity.x;
 
     if (!canSteer) {
@@ -88,7 +88,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     } else if (onGround) {
       vx = approach(vx, 0, PLAYER.groundDecel * dt);
     }
-    // Letting go of run while above walk speed bleeds speed off gradually.
+    // Anything faster than the one speed (a push or a slide) bleeds off gradually.
     if (canSteer && Math.abs(vx) > maxSpeed) vx = approach(vx, Math.sign(vx) * maxSpeed, PLAYER.groundDecel * dt);
     body.setVelocityX(vx);
 

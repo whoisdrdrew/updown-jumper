@@ -134,13 +134,13 @@ Write `src/levels/gameplay/<nn>-<id>.js` like `01-solomun.js`, add it to `LEVELS
   6. Rest: about 10 tiles with a few ducks before the arena.
   7. Arena: 20 tiles of flat solid ground (one screen) with `K` in the middle, 2 rows above the floor,
      nothing else in it. Flag `F` a few tiles after the arena, on solid ground.
-- **Always reachable**: a standing jump lifts the feet about 2.75 tiles (44 px) and a running jump
+- **Always reachable**: a standing jump lifts the feet about 2.75 tiles (44 px) and a jump at full speed
   about 3.5 (57 px). A block top 4 rows above the ground (a floating brick row in row 5 over ground
   in row 9) can't be stood on; put floating rows in row 6, like level 1. Pits no wider than the
   curve allows (5 max). `npm run check-levels` plays every jump with the game's own physics
   (`src/levels/reach.js`) and fails on anything the player can't get to: the suitcase, VIP door,
-  boss and flag (running allowed, with a 5% weaker jump so nothing needs a perfect press), every
-  block or platform top and every music-note block (at walking pace: a run-up is only ever needed
+  boss and flag (full speed, with a 5% weaker jump so nothing needs a perfect press), every
+  block or platform top and every music-note block (from a short run-up of at most 90 px/s: a full-speed run-up is only ever needed
   to cross pits, never to climb), and every rubber duck. Columns and rows in its messages count
   from 0. A thin platform `=` or ground under every landing.
 - **Use the world, don't change it**: build the platform shapes from the world's `motifs`.

@@ -2,8 +2,8 @@
 // mobile platformers such as Leo's Fortune: the touch zones are big but invisible, and the drawings
 // are small and faint, sitting in the side margins next to the game.
 //   Left 45% of the screen (below the EXIT button): put the thumb down anywhere and a cross appears under it. Slide left or
-//   right to walk, further to run, up for the VIP door. The cross follows a thumb that drifts.
-//   Bottom right: B (shoot, hold to run) and A (jump); a tap presses whichever is nearer.
+//   right to move, up for the VIP door. The cross follows a thumb that drifts.
+//   Bottom right: B (shoot) and A (jump); a tap presses whichever is nearer.
 //   Slide between them without lifting. Computers with a mouse never see any of it. Sideways only.
 //
 // The controls only set flags in `touch`; Controls.js reads them next to the keyboard, so the
@@ -17,7 +17,6 @@ export const touch = {
   down: false,
   jump: false,
   action: false,
-  run: false, // sliding the cross far to one side
   // Presses remembered until the game reads them, so a quick tap is never lost.
   jumpQueued: false,
   shootQueued: false,
@@ -103,9 +102,8 @@ export function setupTouchControls(getGame) {
   setupStick(bar.querySelector('.move-zone'), bar.querySelector('.cross'));
   setupButtons(bar.querySelector('.btn-zone'), { a: bar.querySelector('.btn.a'), b: bar.querySelector('.btn.b') });
 
-  // Long presses must not select text, open menus or zoom.
+  // Long presses must not select text or open menus (zoom is blocked in noZoom.js).
   bar.addEventListener('contextmenu', (e) => e.preventDefault());
-  document.addEventListener('gesturestart', (e) => e.preventDefault());
 
   // Sideways only: pause while the phone is upright.
   const portrait = window.matchMedia('(orientation: portrait)');
@@ -145,13 +143,12 @@ export function showTouchControls(on) {
 }
 
 function releaseAll() {
-  Object.assign(touch, { left: false, right: false, up: false, down: false, jump: false, action: false, run: false });
+  Object.assign(touch, { left: false, right: false, up: false, down: false, jump: false, action: false });
   document.querySelectorAll('#touch .on').forEach((el) => el.classList.remove('on'));
 }
 
 // Distances in CSS pixels from where the thumb landed.
 const DEAD_ZONE = 12; // closer than this: no direction
-const RUN_AT = 40; // this far to the side also runs
 const FOLLOW_AT = 60; // further than this, the centre is dragged along behind the thumb
 
 // The floating cross: it centres where the left thumb lands, and directions are on/off.
@@ -168,7 +165,6 @@ function setupStick(zone, cross) {
       touch[k] = Boolean(dirs[k]);
       arms[k].classList.toggle('on', touch[k]);
     }
-    touch.run = Boolean(dirs.run);
   };
 
   const place = () => {
@@ -198,7 +194,6 @@ function setupStick(zone, cross) {
       right: horizontal && dx > 0,
       up: vertical && dy < 0,
       down: vertical && dy > 0,
-      run: horizontal && ax >= RUN_AT,
     };
   };
 
