@@ -15,7 +15,8 @@ import tulumCrowd3 from './world/solomun/crowd-3.png';
 //   tulum:   the wooden beach hut of his Tulum set, wicker lamps and a dancing crowd.
 //   layers:  the DJ worlds of levels 2+ (tools/world_djs.py): four pictures in src/art/world/<art>/
 //            (0-sky, 1-far, 2-mid, 3-near) scrolled at the world file's `parallax` speeds, plus an
-//            optional `effect` on top (snow, embers, sparkles, beams).
+//            optional `effect` on top (snow, embers, sparkles, beams), and optional `animate`
+//            (a layer that cycles through picture frames) and `jumpers` (dolphins).
 // Pits are plain black gaps in every world, like Mario 3.
 
 // The layers are drawn by tools/world_art.py and tools/world_solomun.py at the hero's pixel size
@@ -26,6 +27,13 @@ const worldLayers = import.meta.glob('./world/*/[0-9]-*.png', { eager: true, imp
 const layerKey = (path) => {
   const [, , art, file] = path.split('/');
   return `world-${art}-${file[0]}`;
+};
+// Animation frames of a world (Higgsfield-made too): src/art/world/<art>/<name>-<n>.png, for example
+// the Snapper wave cycle (wave-0..5) and the jumping dolphin (dolphin-0..7). Key: world-<art>-<name>-<n>.
+const worldFrames = import.meta.glob('./world/*/[a-z]*-[0-9].png', { eager: true, import: 'default' });
+const frameKey = (path) => {
+  const [, , art, file] = path.split('/');
+  return `world-${art}-${file.replace('.png', '')}`;
 };
 
 const TULUM_CROWD = [tulumCrowd0, tulumCrowd1, tulumCrowd2, tulumCrowd3];
@@ -45,6 +53,7 @@ export function preloadBackground(scene) {
   scene.load.image('tulum-lamps', tulumLampsImage);
   TULUM_CROWD.forEach((image, i) => scene.load.image(`tulum-crowd-${i}`, image));
   for (const [path, url] of Object.entries(worldLayers)) scene.load.image(layerKey(path), url);
+  for (const [path, url] of Object.entries(worldFrames)) scene.load.image(frameKey(path), url);
 }
 
 // theme: the world's `background` key (src/levels/worlds/): 'tulum', 'club' or 'layers'; world: the
@@ -135,15 +144,75 @@ function tulumLayers(scene, cam, ox, oy, layer) {
 }
 
 // A DJ world: its four layers, back to front, each scrolling at its parallax speed, and an effect.
+// A world's `animate` can swap one layer through picture frames (the Snapper wave breaking), and its
+// `jumpers` puts creatures on a layer that jump out of the water now and then (the dolphins).
 function djLayers(scene, cam, ox, oy, layer, world) {
   const speeds = world.parallax ?? [0, 0.08, 0.18, 0.35];
-  const layers = speeds.map((_s, i) => layer(`world-${world.art}-${i}`, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0));
+  const updates = [];
+  const layers = speeds.map((speed, i) => {
+    const l = layer(`world-${world.art}-${i}`, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0);
+    const anim = world.animate?.layer === i ? world.animate : null;
+    if (anim) updates.push(frameCycle(l, world.art, anim));
+    if (world.jumpers?.layer === i) updates.push(addJumpers(scene, cam, ox, oy, world.art, world.jumpers, speed));
+    return l;
+  });
   const updateEffect = addEffect(scene, ox, oy, world.effect);
   return function update(time) {
     layers.forEach((l, i) => {
       l.tilePositionX = (cam.scrollX * speeds[i]) / ART_SCALE;
     });
+    for (const u of updates) u(time);
     updateEffect(time);
+  };
+}
+
+// Shows a layer's frames one after another, each for its own time (ms), and starts over.
+function frameCycle(l, art, { frames, ms }) {
+  const total = ms.reduce((a, b) => a + b, 0);
+  let shown = -1;
+  return function update(time) {
+    let t = time % total;
+    let n = 0;
+    while (t >= ms[n]) t -= ms[n++];
+    if (n !== shown) {
+      l.setTexture(`world-${art}-${frames}-${n}`);
+      shown = n;
+    }
+  };
+}
+
+// Creatures that jump out of the water and dive back in, every few seconds somewhere on screen,
+// sometimes two together. They sit on their layer (scroll with it) with their feet on `waterY`.
+function addJumpers(scene, cam, ox, oy, art, cfg, speed) {
+  const { frames, count, frameMs, every, waterY, drift } = cfg;
+  const pool = [0, 1].map(() => scene.add.image(0, 0, `world-${art}-${frames}-0`).setOrigin(0.5, 1).setScale(ART_SCALE).setScrollFactor(0).setVisible(false));
+  let next = 1500;
+  const jumps = [];
+  const start = (sprite, x, flip, at) => jumps.push({ sprite, x, flip, at });
+  return function update(time) {
+    if (time >= next) {
+      const x = cam.scrollX * speed + Phaser.Math.Between(40, GAME_WIDTH - 40);
+      const flip = Math.random() < 0.5;
+      if (!pool[0].visible) start(pool[0], x, flip, time);
+      if (Math.random() < 0.4 && !pool[1].visible) start(pool[1], x + (flip ? 16 : -16), flip, time + 220);
+      next = time + Phaser.Math.Between(every[0], every[1]);
+    }
+    for (let i = jumps.length - 1; i >= 0; i--) {
+      const j = jumps[i];
+      const n = Math.floor((time - j.at) / frameMs);
+      if (n < 0) continue;
+      if (n >= count) {
+        j.sprite.setVisible(false);
+        jumps.splice(i, 1);
+        continue;
+      }
+      const dx = (j.flip ? -1 : 1) * drift * n;
+      j.sprite
+        .setTexture(`world-${art}-${frames}-${n}`)
+        .setFlipX(j.flip)
+        .setVisible(true)
+        .setPosition(ox + Math.round(j.x + dx - cam.scrollX * speed), oy + waterY);
+    }
   };
 }
 
