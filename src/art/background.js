@@ -135,16 +135,56 @@ function tulumLayers(scene, cam, ox, oy, layer) {
 }
 
 // A DJ world: its four layers, back to front, each scrolling at its parallax speed, and an effect.
+// A world's `motion` can make a layer move on its own: the layer is cut into horizontal bands of
+// its own picture, and each band swells up and down, sways or drifts (see snapper.js, the wave).
 function djLayers(scene, cam, ox, oy, layer, world) {
   const speeds = world.parallax ?? [0, 0.08, 0.18, 0.35];
-  const layers = speeds.map((_s, i) => layer(`world-${world.art}-${i}`, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0));
-  const updateEffect = addEffect(scene, ox, oy, world.effect);
-  return function update(time) {
-    layers.forEach((l, i) => {
-      l.tilePositionX = (cam.scrollX * speeds[i]) / ART_SCALE;
+  const motion = world.motion ?? {};
+  const parts = [];
+  // The effect goes on top of every layer, or just over layer `effectUnder - 1` when set.
+  const effectAt = world.effectUnder ?? speeds.length;
+  let updateEffect = () => {};
+  speeds.forEach((speed, i) => {
+    if (i === effectAt) updateEffect = addEffect(scene, ox, oy, world.effect, world.effectArea);
+    const key = `world-${world.art}-${i}`;
+    const bands = motion[i];
+    if (!bands) {
+      parts.push({ sprite: layer(key, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0), speed });
+      return;
+    }
+    bands.forEach((band, b) => {
+      const sprite = layer(bandTexture(scene, key, b, band.rows), ox, oy, GAME_WIDTH, GAME_HEIGHT, 0);
+      parts.push({ sprite, speed, band });
     });
+  });
+  if (effectAt >= speeds.length) updateEffect = addEffect(scene, ox, oy, world.effect, world.effectArea);
+  return function update(time) {
+    const t = time / 1000;
+    for (const { sprite, speed, band } of parts) {
+      let x = (cam.scrollX * speed) / ART_SCALE;
+      if (band) {
+        const wave = (period, phase = 0) => Math.sin(((t / period) + phase) * Math.PI * 2);
+        // Whole screen pixels only, so the pixel art stays crisp.
+        sprite.y = oy + Math.round((band.swell ?? 0) * wave(band.period ?? 4, band.phase));
+        x -= ((band.sway ?? 0) * wave(band.swayPeriod ?? 6, band.phase) + (band.drift ?? 0) * t) / ART_SCALE;
+        x = Math.round(x * ART_SCALE) / ART_SCALE;
+      }
+      sprite.tilePositionX = x;
+    }
     updateEffect(time);
   };
+}
+
+// One band (picture rows [top, bottom)) of a world layer as its own texture, the rest see-through.
+// Made once; textures outlive scene restarts.
+function bandTexture(scene, key, index, [top, bottom]) {
+  const bandKey = `${key}-band-${index}`;
+  if (scene.textures.exists(bandKey)) return bandKey;
+  const source = scene.textures.get(key).getSourceImage();
+  const canvas = scene.textures.createCanvas(bandKey, source.width, source.height);
+  canvas.context.drawImage(source, 0, top, source.width, bottom - top, 0, top, source.width, bottom - top);
+  canvas.refresh();
+  return bandKey;
 }
 
 // Little moving things over the backdrop (behind the level), fixed to the screen.
@@ -152,10 +192,12 @@ const EFFECTS = {
   snow: { count: 40, colors: [0xfdfefd, 0xcfd8ec], fall: [12, 26], drift: 8, size: 1 },
   embers: { count: 22, colors: [0xf5b04a, 0xe0801e, 0xffe08a], fall: [-18, -8], drift: 6, size: 1 },
   sparkles: { count: 26, colors: [0xfdfefd, 0xf5c35c, 0x7ad0ff, 0xff6aa8], fall: [0, 0], drift: 0, size: 1, twinkle: true },
+  glints: { count: 30, colors: [0xfdfefd, 0xd8f6ff], fall: [0, 0], drift: 3, size: 1, twinkle: true }, // sun on the water
   beams: { beams: [0xff5a8a, 0x7ad0ff, 0xffd060, 0xff5a8a] },
 };
 
-function addEffect(scene, ox, oy, name) {
+// area: [top, bottom] in screen pixels where the effect shows (default: the whole sky).
+function addEffect(scene, ox, oy, name, area = [0, GAME_HEIGHT - 40]) {
   const fx = EFFECTS[name];
   if (!fx) return () => {};
   if (fx.beams) {
@@ -171,7 +213,7 @@ function addEffect(scene, ox, oy, name) {
     const dot = scene.add.rectangle(0, 0, fx.size, fx.size, fx.colors[i % fx.colors.length])
       .setOrigin(0).setScrollFactor(0).setAlpha(0.8);
     dot.bx = Math.random() * GAME_WIDTH;
-    dot.by = Math.random() * GAME_HEIGHT;
+    dot.by = Phaser.Math.FloatBetween(area[0], area[1]);
     dot.speed = Phaser.Math.FloatBetween(fx.fall[0], fx.fall[1]);
     dot.phase = Math.random() * Math.PI * 2;
     dots.push(dot);
@@ -179,7 +221,7 @@ function addEffect(scene, ox, oy, name) {
   return function update(time) {
     const t = time / 1000;
     for (const d of dots) {
-      const y = Phaser.Math.Wrap(d.by + d.speed * t, 0, GAME_HEIGHT - 40);
+      const y = Phaser.Math.Wrap(d.by + d.speed * t, area[0], area[1]);
       const x = Phaser.Math.Wrap(d.bx + Math.sin(t + d.phase) * fx.drift, 0, GAME_WIDTH);
       d.setPosition(ox + Math.round(x), oy + Math.round(y));
       if (fx.twinkle) d.setAlpha(0.3 + 0.7 * Math.max(0, Math.sin(t * 3 + d.phase)));

@@ -10,7 +10,18 @@ export default {
   background: 'layers', // builder in src/art/background.js
   art: 'snapper', // src/art/world/snapper/0-sky.png .. 3-near.png
   parallax: [0, 0.05, 0.15, 0.35], // how fast each layer scrolls with the camera
-  effect: null,
+  // The wave moves (Sandro, 2026-11-21): the mid picture is cut into the big breaking wave and the
+  // front line of foam, which swell up and down out of step, the wave sways and the foam rolls along.
+  // rows: picture rows of 2-mid.png; swell/sway in screen pixels, drift in pixels per second.
+  motion: {
+    2: [
+      { rows: [140, 216], swell: 3, period: 3.6, sway: 6, swayPeriod: 7 },
+      { rows: [216, 252], swell: 2, period: 2.8, phase: 0.4, drift: 6 },
+    ],
+  },
+  effect: 'glints', // sun glinting on the sea, see EFFECTS in src/art/background.js
+  effectArea: [74, 132], // the sea, in screen pixels
+  effectUnder: 3, // under the tower and the rocks
   tiles: 'tiles', // tileset (src/art/world/tiles.png, shared for now)
   pit: 'black',
   layers: [
@@ -18,6 +29,7 @@ export default {
     'far: the Gold Coast skyline and a green headland on the horizon (0.05)',
     'mid: a big breaking turquoise wave with two dolphins and tiny surfers (0.15)',
     'near: the yellow patrol tower with a palm and surfboards on sand, and the dark rock shelf (0.35)',
+    'motion: the wave swells and sways, the foam rolls along, the sun glints on the water',
   ],
   motifs: ['rock shelf: uneven low steps', 'wide water gaps (pits)', 'the fishing rod (boss)'],
 };
