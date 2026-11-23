@@ -45,6 +45,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.safeUntil = 0;
     this.steerLockedUntil = 0;
     this.puffs = new DuckPuffs(scene);
+
+    // The physics leaves tiny rounding leftovers in the position (51 one frame, 50.99999999999999 the
+    // next, on platforms at certain heights). The picture is drawn on whole pixels, so right on a
+    // pixel edge that flipped him one pixel up and down every frame: he "vibrated". After each
+    // physics step the position is tidied to 1/64 of a pixel, far too little to see or feel.
+    const tidy = () => this.setPosition(Math.round(this.x * 64) / 64, Math.round(this.y * 64) / 64);
+    scene.events.on('postupdate', tidy);
+    this.once('destroy', () => scene.events.off('postupdate', tidy));
   }
 
   get facing() {
